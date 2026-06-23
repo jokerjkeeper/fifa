@@ -154,6 +154,7 @@ posterior = normalize(unnorm_h, unnorm_d, unnorm_a)
 ## 檔案清單
 
 ```
-fifa2026_schedule.html   ← 主檔案，單一 HTML 含所有 CSS/JS
-fifa2026_dev_handoff.md  ← 本文件
+index.html                       ← 主檔案，單一 HTML 含所有 CSS/JS（網站入口）
+docs/fifa2026_dev_handoff.md     ← 本文件
+docs/fifa2026_odds_bayes_analysis.md ← 賠率與貝葉斯分析說明
 ```
