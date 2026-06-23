@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIFA 世界盃 2026 · 賽程表</title>
+<style>
+:root{
+  --bg:#f0f4fb;--surface:#ffffff;--surface2:#eaeff8;--surface3:#dde5f4;
+  --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
+  --text:#1a2035;--text2:#5a6480;--text3:#9aa0b8;
+  --accent:#2563eb;--accent-dim:rgba(37,99,235,0.10);
+  --gold:#d97706;--red:#dc2626;--green:#16a34a;--orange:#ea580c;
+  --purple:#7c3aed;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;min-height:100vh;font-size:14px;}
+
+/* HEADER */
+.page-header{background:linear-gradient(180deg,#ffffff 0%,#f0f4fb 100%);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:200;}
+.logo{display:flex;align-items:center;gap:11px;}
+.logo-icon{font-size:26px;line-height:1;}
+.logo h1{font-size:16px;font-weight:600;letter-spacing:-.02em;}
+.logo p{font-size:11px;color:var(--text2);margin-top:1px;}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.live-pill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 4px rgba(22,163,74,0.5);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.btn{display:flex;align-items:center;gap:5px;padding:6px 13px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;transition:all .15s;}
+.btn:hover{background:var(--surface3);border-color:var(--accent);}
+.btn:disabled{opacity:.45;cursor:default;}
+.btn svg{width:13px;height:13px;flex-shrink:0;}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.spinning{animation:spin .7s linear infinite;}
+.odds-status{font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);}
+.odds-ok{color:#15803d;border-color:rgba(22,163,74,.3);background:rgba(22,163,74,.07);}
+.odds-err{color:#c2410c;border-color:rgba(234,88,12,.3);background:rgba(234,88,12,.07);}
+.odds-loading{color:var(--text2);}
+
+/* STATS BAR */
+.stats-bar{display:flex;border-bottom:1px solid var(--border);background:var(--surface);}
+.stat{flex:1;padding:9px 12px;text-align:center;border-right:1px solid var(--border);}
+.stat:last-child{border-right:none;}
+.stat-n{font-size:20px;font-weight:700;line-height:1;}
+.stat-l{font-size:10px;color:var(--text2);margin-top:2px;letter-spacing:.04em;}
+
+/* TABS */
+.tabs-bar{display:flex;gap:2px;padding:10px 20px 0;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:57px;z-index:100;}
+.tab{padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;border-radius:8px 8px 0 0;border:1px solid transparent;color:var(--text2);background:transparent;transition:all .15s;border-bottom:none;position:relative;bottom:-1px;}
+.tab:hover{color:var(--text);background:var(--surface2);}
+.tab.active{color:var(--text);background:var(--bg);border-color:var(--border);border-bottom-color:var(--bg);}
+.tab .cnt{display:inline-block;margin-left:5px;font-size:10px;padding:1px 6px;border-radius:10px;background:var(--surface3);color:var(--text2);font-weight:400;}
+.tab.active .cnt{background:var(--accent-dim);color:var(--accent);}
+
+/* PANELS */
+.panel{display:none;}.panel.active{display:block;}
+
+/* FILTER ROW */
+.filter-row{display:flex;align-items:center;gap:8px;padding:10px 20px;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;background:var(--bg);}
+.filter-row::-webkit-scrollbar{display:none;}
+.filter-label{font-size:11px;color:var(--text3);white-space:nowrap;}
+.chip{padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;white-space:nowrap;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .15s;}
+.chip:hover{border-color:var(--border2);color:var(--text);}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500;}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:680px;}
+thead th{padding:9px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border);background:var(--surface);white-space:nowrap;}
+thead th.c{text-align:center;}
+tbody tr{transition:background .1s;}
+tbody tr:hover td{background:rgba(255,255,255,0.02);}
+td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle;}
+
+/* DATE DIVIDER */
+.date-div td{background:var(--surface);color:var(--text2);font-size:10px;font-weight:600;padding:5px 14px;letter-spacing:.08em;text-transform:uppercase;}
+
+/* TEAM CELL */
+.team-cell{display:flex;align-items:center;gap:7px;}
+.flag{font-size:18px;line-height:1;}
+.tname{font-size:13px;color:var(--text);}
+.tname.w{font-weight:700;color:#fff;}
+.tname.l{color:var(--text3);}
+
+/* SCORE */
+.score-wrap{text-align:center;}
+.score-box{display:inline-flex;align-items:center;gap:5px;font-size:17px;font-weight:700;}
+.sep{color:var(--text3);font-size:13px;font-weight:400;}
+.sw{color:#111827;}.sd{color:var(--text2);}.sl{color:var(--text3);}
+.vs-text{color:var(--text3);font-size:12px;letter-spacing:2px;}
+
+/* ── ODDS + BAYES CELL ── */
+.odds-cell{min-width:200px;}
+.odds-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.odds-label{font-size:10px;color:var(--text3);width:52px;flex-shrink:0;}
+.odds-bar-wrap{flex:1;display:flex;height:5px;border-radius:3px;overflow:hidden;}
+.ob-h{background:var(--accent);}
+.ob-d{background:var(--border2);}
+.ob-a{background:var(--orange);}
+.odds-pcts{display:flex;justify-content:space-between;font-size:10px;margin-top:1px;}
+.pct-h{color:var(--accent);}
+.pct-d{color:var(--text3);}
+.pct-a{color:var(--orange);}
+
+/* Bayes row */
+.bayes-row{display:flex;align-items:center;gap:6px;margin-top:5px;}
+.bayes-bar-wrap{flex:1;display:flex;height:5px;border-radius:3px;overflow:hidden;}
+.bb-h{background:#6366f1;}
+.bb-d{background:rgba(129,140,248,.3);}
+.bb-a{background:#9333ea;}
+.bayes-pcts{display:flex;justify-content:space-between;font-size:10px;margin-top:1px;}
+.pct-bh{color:#6366f1;}
+.pct-bd{color:var(--text3);}
+.pct-ba{color:#9333ea;}
+
+/* delta arrows */
+.delta{font-size:10px;margin-left:3px;}
+.delta-up{color:#15803d;}
+.delta-dn{color:#b91c1c;}
+.delta-eq{color:var(--text3);}
+
+/* raw odds display */
+.raw-odds{display:flex;gap:6px;margin-bottom:6px;}
+.odds-pill{font-size:11px;padding:2px 7px;border-radius:5px;background:var(--surface3);border:1px solid var(--border2);color:var(--text2);}
+.odds-pill span{color:var(--text);font-weight:600;}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;padding:3px 8px;border-radius:20px;white-space:nowrap;}
+.b-final{background:rgba(22,163,74,.08);color:#15803d;border:1px solid rgba(22,163,74,.25);}
+.b-sched{background:rgba(37,99,235,.08);color:#1d4ed8;border:1px solid rgba(37,99,235,.2);}
+.b-live{background:rgba(220,38,38,.08);color:#b91c1c;border:1px solid rgba(220,38,38,.2);animation:blink 1.5s infinite;}
+
+/* UPSET TAG */
+.tag{display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle;}
+.tag-upset{background:rgba(217,119,6,.1);color:#92400e;border:1px solid rgba(217,119,6,.3);}
+.tag-big{background:rgba(220,38,38,.08);color:#991b1b;border:1px solid rgba(220,38,38,.2);}
+
+/* LEGEND */
+.legend{display:flex;gap:14px;padding:8px 20px;border-bottom:1px solid var(--border);background:var(--bg);flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+.legend-dot{width:8px;height:8px;border-radius:2px;}
+
+/* BAYESIAN INFO BOX */
+.info-box{margin:12px 20px;padding:12px 16px;background:rgba(99,102,241,.05);border:1px solid rgba(99,102,241,.18);border-radius:10px;font-size:12px;color:var(--text2);line-height:1.6;}
+.info-box strong{color:#6d28d9;}
+
+.grp-tag{font-size:11px;color:var(--text3);}
+.empty td{text-align:center;padding:2rem;color:var(--text3);font-size:13px;}
+.footer{padding:10px 20px;font-size:11px;color:var(--text3);border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+
+@media(max-width:600px){
+  .page-header{padding:10px 14px;}
+  .tabs-bar{padding:8px 14px 0;}
+  thead th,td{padding:9px 10px;}
+  .stat-n{font-size:17px;}
+  .info-box{margin:10px 14px;}
+}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div class="logo">
+    <div class="logo-icon">🏆</div>
+    <div>
+      <h1>FIFA 世界盃 2026</h1>
+      <p>美國 · 加拿大 · 墨西哥 &nbsp;|&nbsp; 48隊 · 104場</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="odds-status odds-loading" id="odds-status">⏳ 賠率載入中…</span>
+    <div class="live-pill"><span class="live-dot"></span><span id="update-time">載入中…</span></div>
+    <button class="btn" id="refresh-btn" onclick="loadData()">
+      <svg id="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+        <path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+        <path d="M3 21v-5h5"/>
+      </svg>
+      更新
+    </button>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-n" id="s-total">—</div><div class="stat-l">總場次</div></div>
+  <div class="stat"><div class="stat-n" style="color:#4ade80" id="s-final">—</div><div class="stat-l">已結束</div></div>
+  <div class="stat"><div class="stat-n" style="color:#f87171" id="s-live">—</div><div class="stat-l">直播中</div></div>
+  <div class="stat"><div class="stat-n" style="color:#60a5fa" id="s-sched">—</div><div class="stat-l">即將開賽</div></div>
+</div>
+
+<div class="tabs-bar">
+  <button class="tab active" id="tab-upcoming" onclick="switchTab('upcoming')">即將開賽 <span class="cnt" id="cnt-upcoming">—</span></button>
+  <button class="tab" id="tab-today" onclick="switchTab('today')">今日賽事 <span class="cnt" id="cnt-today">—</span></button>
+  <button class="tab" id="tab-history" onclick="switchTab('history')">歷史紀錄 <span class="cnt" id="cnt-history">—</span></button>
+</div>
+
+<!-- UPCOMING -->
+<div class="panel active" id="panel-upcoming">
+  <div class="info-box">
+    <strong>貝葉斯動態修正說明</strong>：
+    <strong style="color:var(--accent)">藍色</strong> = 外盤賠率隱含概率（先驗），
+    <strong style="color:#818cf8">紫色</strong> = 貝葉斯修正後概率（後驗）。
+    修正依據：同組已完成比賽的實際表現 vs 預期差異，進球數、爆冷記錄、防守表現均納入計算。
+    箭頭 <span style="color:var(--green)">↑</span> 表示修正後勝率上升，<span style="color:var(--red)">↓</span> 表示下降。
+  </div>
+  <div class="filter-row">
+    <span class="filter-label">組別：</span>
+    <button class="chip active" onclick="setChip(this,'ug','all')">全部</button>
+    <button class="chip" onclick="setChip(this,'ug','A')">A組</button>
+    <button class="chip" onclick="setChip(this,'ug','B')">B組</button>
+    <button class="chip" onclick="setChip(this,'ug','C')">C組</button>
+    <button class="chip" onclick="setChip(this,'ug','D')">D組</button>
+    <button class="chip" onclick="setChip(this,'ug','E')">E組</button>
+    <button class="chip" onclick="setChip(this,'ug','F')">F組</button>
+    <button class="chip" onclick="setChip(this,'ug','G')">G組</button>
+    <button class="chip" onclick="setChip(this,'ug','H')">H組</button>
+    <button class="chip" onclick="setChip(this,'ug','I')">I組</button>
+    <button class="chip" onclick="setChip(this,'ug','J')">J組</button>
+    <button class="chip" onclick="setChip(this,'ug','K')">K組</button>
+    <button class="chip" onclick="setChip(this,'ug','L')">L組</button>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th>日期</th><th>時間(台)</th><th>組別</th>
+      <th>主隊</th><th class="c">賠率概率 → 貝葉斯修正</th><th>客隊</th><th class="c">狀態</th>
+    </tr></thead>
+    <tbody id="tbody-upcoming"></tbody>
+  </table></div>
+</div>
+
+<!-- TODAY -->
+<div class="panel" id="panel-today">
+  <div class="table-wrap"><table>
+    <thead><tr><th>時間(台)</th><th>組別</th><th>主隊</th><th class="c">比分 / 賠率概率 → 貝葉斯修正</th><th>客隊</th><th class="c">狀態</th></tr></thead>
+    <tbody id="tbody-today"></tbody>
+  </table></div>
+</div>
+
+<!-- HISTORY -->
+<div class="panel" id="panel-history">
+  <div class="filter-row">
+    <span class="filter-label">篩選：</span>
+    <button class="chip active" onclick="setChip(this,'hf','all')">全部</button>
+    <button class="chip" onclick="setChip(this,'hf','upset')">爆冷 🌪</button>
+    <button class="chip" onclick="setChip(this,'hf','high')">大比分 (3+球)</button>
+    <button class="chip" onclick="setChip(this,'hf','draw')">平局</button>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th>日期</th><th>時間(台)</th><th>組別</th>
+      <th>主隊</th><th class="c">比分</th><th>客隊</th><th class="c">標記</th>
+    </tr></thead>
+    <tbody id="tbody-history"></tbody>
+  </table></div>
+</div>
+
+<div class="footer">
+  <span>賠率來源：The Odds API（外盤歐賠）· 台灣時間 · 貝葉斯修正：依本屆小組賽實際表現動態更新</span>
+  <span id="footer-time"></span>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const ODDS_API_KEY = '023ee379fbdbea2274371b447449b272';
+const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
+
+// ══════════════════════════════════════════════════════
+// LOOKUP TABLES
+// ══════════════════════════════════════════════════════
+const FLAG={
+  MEX:'🇲🇽',RSA:'🇿🇦',KOR:'🇰🇷',CZE:'🇨🇿',CAN:'🇨🇦',BIH:'🇧🇦',USA:'🇺🇸',PAR:'🇵🇾',
+  QAT:'🇶🇦',SUI:'🇨🇭',BRA:'🇧🇷',MAR:'🇲🇦',HTI:'🇭🇹',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',AUS:'🇦🇺',TUR:'🇹🇷',
+  GER:'🇩🇪',CIV:'🇨🇮',ECU:'🇪🇨',CUW:'🇨🇼',NED:'🇳🇱',JPN:'🇯🇵',TUN:'🇹🇳',SWE:'🇸🇪',
+  BEL:'🇧🇪',EGY:'🇪🇬',IRN:'🇮🇷',NZL:'🇳🇿',ESP:'🇪🇸',URU:'🇺🇾',KSA:'🇸🇦',CPV:'🇨🇻',
+  FRA:'🇫🇷',SEN:'🇸🇳',NOR:'🇳🇴',IRQ:'🇮🇶',ARG:'🇦🇷',DZA:'🇩🇿',AUT:'🇦🇹',JOR:'🇯🇴',
+  POR:'🇵🇹',UZB:'🇺🇿',COL:'🇨🇴',COD:'🇨🇩',ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',CRO:'🇭🇷',GHA:'🇬🇭',PAN:'🇵🇦'
+};
+const GROUPMAP={
+  MEX:'A',RSA:'A',KOR:'A',CZE:'A',CAN:'B',BIH:'B',QAT:'B',SUI:'B',
+  BRA:'C',MAR:'C',HTI:'C',SCO:'C',USA:'D',PAR:'D',AUS:'D',TUR:'D',
+  GER:'E',CIV:'E',ECU:'E',CUW:'E',NED:'F',JPN:'F',TUN:'F',SWE:'F',
+  BEL:'G',EGY:'G',IRN:'G',NZL:'G',ESP:'H',URU:'H',KSA:'H',CPV:'H',
+  FRA:'I',SEN:'I',NOR:'I',IRQ:'I',ARG:'J',DZA:'J',AUT:'J',JOR:'J',
+  POR:'K',UZB:'K',COL:'K',COD:'K',ENG:'L',CRO:'L',GHA:'L',PAN:'L'
+};
+const ZH={
+  MEX:'墨西哥',RSA:'南非',KOR:'韓國',CZE:'捷克',CAN:'加拿大',BIH:'波黑',USA:'美國',PAR:'巴拉圭',
+  QAT:'卡塔爾',SUI:'瑞士',BRA:'巴西',MAR:'摩洛哥',HTI:'海地',SCO:'蘇格蘭',AUS:'澳洲',TUR:'土耳其',
+  GER:'德國',CIV:'象牙海岸',ECU:'厄瓜多',CUW:'庫拉索',NED:'荷蘭',JPN:'日本',TUN:'突尼西亞',SWE:'瑞典',
+  BEL:'比利時',EGY:'埃及',IRN:'伊朗',NZL:'紐西蘭',ESP:'西班牙',URU:'烏拉圭',KSA:'沙烏地阿拉伯',CPV:'佛得角',
+  FRA:'法國',SEN:'塞內加爾',NOR:'挪威',IRQ:'伊拉克',ARG:'阿根廷',DZA:'阿爾及利亞',AUT:'奧地利',JOR:'約旦',
+  POR:'葡萄牙',UZB:'烏茲別克',COL:'哥倫比亞',COD:'剛果民主共和國',ENG:'英格蘭',CRO:'克羅埃西亞',GHA:'迦納',PAN:'巴拿馬'
+};
+// Maps Odds API team names → our abbr
+const ODDS_NAME_MAP = {
+  'Mexico':'MEX','South Africa':'RSA','Korea Republic':'KOR','South Korea':'KOR','Czechia':'CZE','Czech Republic':'CZE',
+  'Canada':'CAN','Bosnia and Herzegovina':'BIH','USA':'USA','United States':'USA','Paraguay':'PAR',
+  'Qatar':'QAT','Switzerland':'SUI','Brazil':'BRA','Morocco':'MAR','Haiti':'HTI','Scotland':'SCO',
+  'Australia':'AUS','Turkey':'TUR','Turkiye':'TUR','Germany':'GER',"Cote d'Ivoire":'CIV',"Côte d'Ivoire":'CIV','Ivory Coast':'CIV',
+  'Ecuador':'ECU','Curacao':'CUW','Curaçao':'CUW','Netherlands':'NED','Japan':'JPN','Tunisia':'TUN','Sweden':'SWE',
+  'Belgium':'BEL','Egypt':'EGY','Iran':'IRN','New Zealand':'NZL','Spain':'ESP','Uruguay':'URU',
+  'Saudi Arabia':'KSA','Cape Verde':'CPV','France':'FRA','Senegal':'SEN','Norway':'NOR','Iraq':'IRQ',
+  'Argentina':'ARG','Algeria':'DZA','Austria':'AUT','Jordan':'JOR','Portugal':'POR','Uzbekistan':'UZB',
+  'Colombia':'COL','DR Congo':'COD','Democratic Republic of Congo':'COD','Congo DR':'COD',
+  'England':'ENG','Croatia':'CRO','Ghana':'GHA','Panama':'PAN'
+};
+
+// ══════════════════════════════════════════════════════
+// ALL HISTORICAL + UPCOMING GAMES
+// ══════════════════════════════════════════════════════
+const ALL_GAMES = [
+  // Round 1 (6/11–6/18)
+  {s:'final',t:'2026-06-11T20:00',h:'MEX',a:'RSA',hs:2,as:0},
+  {s:'final',t:'2026-06-12T00:00',h:'KOR',a:'CZE',hs:2,as:1},
+  {s:'final',t:'2026-06-12T20:00',h:'CAN',a:'BIH',hs:1,as:1},
+  {s:'final',t:'2026-06-13T04:00',h:'USA',a:'PAR',hs:4,as:1},
+  {s:'final',t:'2026-06-13T08:00',h:'QAT',a:'SUI',hs:1,as:1},
+  {s:'final',t:'2026-06-13T12:00',h:'BRA',a:'MAR',hs:1,as:1},
+  {s:'final',t:'2026-06-14T03:00',h:'HTI',a:'SCO',hs:0,as:1},
+  {s:'final',t:'2026-06-14T04:00',h:'AUS',a:'TUR',hs:2,as:1},
+  {s:'final',t:'2026-06-14T23:00',h:'NED',a:'JPN',hs:2,as:2},
+  {s:'final',t:'2026-06-15T03:00',h:'SWE',a:'TUN',hs:5,as:1},
+  {s:'final',t:'2026-06-15T04:00',h:'GER',a:'ECU',hs:4,as:0},
+  {s:'final',t:'2026-06-15T07:00',h:'CUW',a:'CIV',hs:0,as:3},
+  {s:'final',t:'2026-06-15T23:00',h:'BEL',a:'EGY',hs:1,as:1},
+  {s:'final',t:'2026-06-16T03:00',h:'IRN',a:'NZL',hs:2,as:2},
+  {s:'final',t:'2026-06-16T03:00',h:'ESP',a:'CPV',hs:0,as:0,upset:true,ph:88,pd:8,pa:4},
+  {s:'final',t:'2026-06-16T07:00',h:'KSA',a:'URU',hs:1,as:1},
+  {s:'final',t:'2026-06-16T23:00',h:'FRA',a:'SEN',hs:3,as:1},
+  {s:'final',t:'2026-06-17T03:00',h:'NOR',a:'IRQ',hs:4,as:1},
+  {s:'final',t:'2026-06-17T04:00',h:'ARG',a:'DZA',hs:3,as:0},
+  {s:'final',t:'2026-06-17T08:00',h:'AUT',a:'JOR',hs:3,as:1},
+  {s:'final',t:'2026-06-17T23:00',h:'POR',a:'COD',hs:1,as:1},
+  {s:'final',t:'2026-06-18T03:00',h:'UZB',a:'COL',hs:1,as:3},
+  {s:'final',t:'2026-06-18T04:00',h:'ENG',a:'CRO',hs:4,as:2},
+  {s:'final',t:'2026-06-18T08:00',h:'GHA',a:'PAN',hs:1,as:0},
+  // Round 2 (6/18–6/23)
+  {s:'final',t:'2026-06-18T20:00',h:'CZE',a:'RSA',hs:1,as:1},
+  {s:'final',t:'2026-06-19T00:00',h:'MEX',a:'KOR',hs:1,as:0},
+  {s:'final',t:'2026-06-19T20:00',h:'SUI',a:'BIH',hs:4,as:1},
+  {s:'final',t:'2026-06-19T20:00',h:'CAN',a:'QAT',hs:6,as:0},
+  {s:'final',t:'2026-06-20T03:00',h:'USA',a:'TUR',hs:2,as:1,ph:62,pd:20,pa:18},
+  {s:'final',t:'2026-06-20T07:00',h:'AUS',a:'PAR',hs:1,as:2,upset:true,ph:40,pd:28,pa:32},
+  {s:'final',t:'2026-06-20T23:00',h:'NED',a:'SWE',hs:5,as:1},
+  {s:'final',t:'2026-06-21T03:00',h:'TUN',a:'JPN',hs:0,as:4},
+  {s:'final',t:'2026-06-21T04:00',h:'GER',a:'CIV',hs:4,as:1,ph:72,pd:16,pa:12},
+  {s:'final',t:'2026-06-21T08:00',h:'ECU',a:'CUW',hs:0,as:0,upset:true,ph:74,pd:17,pa:9},
+  {s:'final',t:'2026-06-22T00:00',h:'ESP',a:'KSA',hs:4,as:0},
+  {s:'final',t:'2026-06-22T03:00',h:'BEL',a:'IRN',hs:0,as:0,upset:true,ph:71,pd:18,pa:11},
+  {s:'final',t:'2026-06-22T06:00',h:'URU',a:'CPV',hs:2,as:2,upset:true,ph:78,pd:14,pa:8},
+  {s:'final',t:'2026-06-22T09:00',h:'NZL',a:'EGY',hs:1,as:3,ph:38,pd:28,pa:34},
+  {s:'final',t:'2026-06-23T01:00',h:'ARG',a:'AUT',hs:2,as:0},
+  {s:'final',t:'2026-06-23T05:00',h:'FRA',a:'IRQ',hs:3,as:0},
+  {s:'final',t:'2026-06-23T08:00',h:'NOR',a:'SEN',hs:3,as:2},
+  {s:'final',t:'2026-06-23T11:00',h:'JOR',a:'DZA',hs:1,as:2},
+  // Round 3 – UPCOMING (odds fetched live)
+  {s:'scheduled',t:'2026-06-24T01:00',h:'POR',a:'UZB',hs:0,as:0},
+  {s:'scheduled',t:'2026-06-24T04:00',h:'ENG',a:'GHA',hs:0,as:0},
+  {s:'scheduled',t:'2026-06-24T07:00',h:'PAN',a:'CRO',hs:0,as:0},
+  {s:'scheduled',t:'2026-06-24T10:00',h:'COL',a:'COD',hs:0,as:0},
+  {s:'scheduled',t:'2026-06-25T03:00',h:'SUI',a:'CAN',hs:0,as:0},
+  {s:'scheduled',t:'2026-06-25T03:00',h:'BIH',a:'QAT',hs:0,as:0},
+  {s:'scheduled',t:'2026-06-25T06:00',h:'SCO',a:'BRA',hs:0,as:0},
+  {s:'scheduled',t:'2026-06-25T06:00',h:'MAR',a:'HTI',hs:0,as:0},
+  {s:'scheduled',t:'2026-06-25T09:00',h:'CZE',a:'MEX',hs:0,as:0},
+  {s:'scheduled',t:'2026-06-25T09:00',h:'RSA',a:'KOR',hs:0,as:0},
+];
+
+// ══════════════════════════════════════════════════════
+// BAYESIAN ENGINE
+// ══════════════════════════════════════════════════════
+
+// Build performance profile per team from completed matches
+function buildTeamProfiles() {
+  const profiles = {};
+  const initProfile = () => ({
+    games:0, goals_for:0, goals_against:0,
+    wins:0, draws:0, losses:0,
+    upsets_caused:0, upset_suffered:0,
+    expected_wins:0  // sum of win probabilities when they were favourite
+  });
+
+  ALL_GAMES.filter(g => g.s === 'final').forEach(g => {
+    if (!profiles[g.h]) profiles[g.h] = initProfile();
+    if (!profiles[g.a]) profiles[g.a] = initProfile();
+
+    const ph = profiles[g.h], pa = profiles[g.a];
+    ph.games++; pa.games++;
+    ph.goals_for += g.hs; ph.goals_against += g.as;
+    pa.goals_for += g.as; pa.goals_against += g.hs;
+
+    if (g.hs > g.as) { ph.wins++; pa.losses++; }
+    else if (g.hs < g.as) { ph.losses++; pa.wins++; }
+    else { ph.draws++; pa.draws++; }
+
+    if (g.upset) {
+      // The underdog caused the upset
+      if (g.ph && g.ph > 55) { ph.upset_suffered++; pa.upsets_caused++; }
+      else if (g.pa && g.pa > 55) { pa.upset_suffered++; ph.upsets_caused++; }
+    }
+  });
+  return profiles;
+}
+
+// Convert decimal odds → fair probability (remove vig)
+function oddsToProb(home, draw, away) {
+  const raw_h = 1/home, raw_d = 1/draw, raw_a = 1/away;
+  const total = raw_h + raw_d + raw_a;
+  return {
+    ph: parseFloat((raw_h/total*100).toFixed(1)),
+    pd: parseFloat((raw_d/total*100).toFixed(1)),
+    pa: parseFloat((raw_a/total*100).toFixed(1))
+  };
+}
+
+// Bayesian update: given prior probs and team performance
+function bayesUpdate(prior_h, prior_d, prior_a, teamH, teamA, profiles) {
+  const ph = profiles[teamH] || {games:0,wins:0,draws:0,losses:0,goals_for:0,goals_against:0,upsets_caused:0,upset_suffered:0};
+  const pa = profiles[teamA] || {games:0,wins:0,draws:0,losses:0,goals_for:0,goals_against:0,upsets_caused:0,upset_suffered:0};
+
+  // Performance factor: ratio of actual wins to games played
+  // If team has played 0 games, factor = 1 (no update)
+  function perfFactor(team, outcome) {
+    if (team.games === 0) return 1.0;
+    const winRate = team.wins / team.games;
+    const goalRatio = team.games > 0 ? (team.goals_for - team.goals_against) / team.games : 0;
+    const upsetBonus = team.upsets_caused * 0.15;
+    const upsetPenalty = team.upset_suffered * 0.12;
+
+    if (outcome === 'win') {
+      // More wins + positive goal diff + caused upsets → higher likelihood
+      return Math.max(0.4, 1 + (winRate - 0.4) * 1.2 + goalRatio * 0.08 + upsetBonus - upsetPenalty);
+    } else if (outcome === 'draw') {
+      const drawRate = team.draws / team.games;
+      return Math.max(0.5, 1 + (drawRate - 0.25) * 0.8);
+    } else { // loss
+      return Math.max(0.4, 1 + ((team.losses / team.games) - 0.3) * 0.9 - upsetPenalty);
+    }
+  }
+
+  // P(data | H wins) × P(H wins) etc.
+  const lh_hw = perfFactor(ph,'win') * perfFactor(pa,'loss');
+  const lh_draw = perfFactor(ph,'draw') * perfFactor(pa,'draw');
+  const lh_aw = perfFactor(pa,'win') * perfFactor(ph,'loss');
+
+  const unnorm_h = (prior_h/100) * lh_hw;
+  const unnorm_d = (prior_d/100) * lh_draw;
+  const unnorm_a = (prior_a/100) * lh_aw;
+  const total = unnorm_h + unnorm_d + unnorm_a;
+
+  return {
+    bh: parseFloat((unnorm_h/total*100).toFixed(1)),
+    bd: parseFloat((unnorm_d/total*100).toFixed(1)),
+    ba: parseFloat((unnorm_a/total*100).toFixed(1))
+  };
+}
+
+// Live odds store (populated from Odds API)
+let liveOdds = {}; // key: "H-A" → {home_odds, draw_odds, away_odds, bookmaker}
+let oddsLoaded = false;
+
+async function fetchOdds() {
+  try {
+    document.getElementById('odds-status').textContent = '⏳ 拉取外盤賠率…';
+    document.getElementById('odds-status').className = 'odds-status odds-loading';
+
+    const url = `${ODDS_API_BASE}/sports/soccer_fifa_world_cup/odds/?apiKey=${ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal`;
+    const res = await fetch(url);
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    liveOdds = {};
+    data.forEach(event => {
+      const homeAbbr = ODDS_NAME_MAP[event.home_team];
+      const awayAbbr = ODDS_NAME_MAP[event.away_team];
+      if (!homeAbbr || !awayAbbr) return;
+
+      // Pick first bookmaker that has all 3 outcomes
+      for (const bm of (event.bookmakers||[])) {
+        const h2h = bm.markets?.find(m => m.key === 'h2h');
+        if (!h2h) continue;
+        const outcomes = h2h.outcomes;
+        const homeO = outcomes.find(o => ODDS_NAME_MAP[o.name] === homeAbbr || o.name === event.home_team);
+        const awayO = outcomes.find(o => ODDS_NAME_MAP[o.name] === awayAbbr || o.name === event.away_team);
+        const drawO = outcomes.find(o => o.name === 'Draw');
+        if (homeO && awayO && drawO) {
+          liveOdds[`${homeAbbr}-${awayAbbr}`] = {
+            home: homeO.price, draw: drawO.price, away: awayO.price,
+            bookmaker: bm.title
+          };
+          break;
+        }
+      }
+    });
+
+    const count = Object.keys(liveOdds).length;
+    oddsLoaded = true;
+    document.getElementById('odds-status').textContent = `✓ 外盤賠率已載入 (${count} 場)`;
+    document.getElementById('odds-status').className = 'odds-status odds-ok';
+    return true;
+  } catch(e) {
+    document.getElementById('odds-status').textContent = `⚠ 賠率離線（使用備用數據）`;
+    document.getElementById('odds-status').className = 'odds-status odds-err';
+    return false;
+  }
+}
+
+// Fallback odds for scheduled games
+const FALLBACK_ODDS = {
+  'POR-UZB':{home:1.14,draw:7.5,away:19.0,bookmaker:'備用'},
+  'ENG-GHA':{home:1.18,draw:6.5,away:17.0,bookmaker:'備用'},
+  'PAN-CRO':{home:5.0,draw:3.8,away:1.62,bookmaker:'備用'},
+  'COL-COD':{home:1.72,draw:3.5,away:5.0,bookmaker:'備用'},
+  'SUI-CAN':{home:2.4,draw:3.2,away:2.9,bookmaker:'備用'},
+  'BIH-QAT':{home:1.62,draw:3.6,away:5.5,bookmaker:'備用'},
+  'SCO-BRA':{home:8.0,draw:4.5,away:1.38,bookmaker:'備用'},
+  'MAR-HTI':{home:1.16,draw:7.0,away:18.0,bookmaker:'備用'},
+  'CZE-MEX':{home:3.5,draw:3.3,away:2.1,bookmaker:'備用'},
+  'RSA-KOR':{home:5.0,draw:3.8,away:1.6,bookmaker:'備用'},
+};
+
+function getOddsForGame(g) {
+  const key = `${g.h}-${g.a}`;
+  return liveOdds[key] || FALLBACK_ODDS[key] || null;
+}
+
+// ══════════════════════════════════════════════════════
+// UI STATE
+// ══════════════════════════════════════════════════════
+const chipState = {'ug':'all','hf':'all'};
+function setChip(el, key, val) {
+  chipState[key] = val;
+  el.closest('.filter-row').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderAll();
+}
+
+let currentTab = 'upcoming';
+function switchTab(tab) {
+  currentTab = tab;
+  ['upcoming','today','history'].forEach(t => {
+    document.getElementById('panel-'+t).classList.toggle('active', t===tab);
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// HTML HELPERS
+// ══════════════════════════════════════════════════════
+function fmtTW(localStr) {
+  const d = new Date(localStr+':00');
+  const mo = d.getMonth()+1, day = d.getDate();
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return {date:`${mo}月${day}日`, time:`${hh}:${mm}`, ts:d.getTime()};
+}
+function todayLabel() {
+  const d = new Date();
+  return `${d.getMonth()+1}月${d.getDate()}日`;
+}
+
+function scoreHtml(g) {
+  if (g.s === 'scheduled') return `<div class="score-wrap"><span class="vs-text">vs</span></div>`;
+  const hc = g.hs>g.as?'sw':g.hs<g.as?'sl':'sd';
+  const ac = g.as>g.hs?'sw':g.as<g.hs?'sl':'sd';
+  return `<div class="score-wrap"><div class="score-box"><span class="${hc}">${g.hs}</span><span class="sep">:</span><span class="${ac}">${g.as}</span></div></div>`;
+}
+
+function deltaArrow(prior, posterior) {
+  const diff = posterior - prior;
+  if (diff > 1.5) return `<span class="delta delta-up">↑${diff.toFixed(1)}%</span>`;
+  if (diff < -1.5) return `<span class="delta delta-dn">↓${Math.abs(diff).toFixed(1)}%</span>`;
+  return `<span class="delta delta-eq">≈</span>`;
+}
+
+function oddsCellHtml(g, profiles) {
+  const odds = getOddsForGame(g);
+
+  if (!odds) {
+    return `<td class="odds-cell" style="color:var(--text3);font-size:12px">— 賠率載入中</td>`;
+  }
+
+  const prior = oddsToProb(odds.home, odds.draw, odds.away);
+  const bayes = bayesUpdate(prior.ph, prior.pd, prior.pa, g.h, g.a, profiles);
+  const t_prior = prior.ph + prior.pd + prior.pa;
+  const t_bayes = bayes.bh + bayes.bd + bayes.ba;
+
+  return `<td class="odds-cell">
+    <div class="raw-odds">
+      <span class="odds-pill">主 <span>${odds.home}</span></span>
+      <span class="odds-pill">平 <span>${odds.draw}</span></span>
+      <span class="odds-pill">客 <span>${odds.away}</span></span>
+      <span style="font-size:10px;color:var(--text3);margin-left:2px">${odds.bookmaker}</span>
+    </div>
+    <div class="odds-row">
+      <span class="odds-label" style="color:var(--accent);font-size:10px">📊 賠率</span>
+      <div class="odds-bar-wrap">
+        <div class="ob-h" style="width:${prior.ph/t_prior*100}%"></div>
+        <div class="ob-d" style="width:${prior.pd/t_prior*100}%"></div>
+        <div class="ob-a" style="width:${prior.pa/t_prior*100}%"></div>
+      </div>
+    </div>
+    <div class="odds-pcts">
+      <span class="pct-h">${prior.ph}%</span>
+      <span class="pct-d">${prior.pd}%</span>
+      <span class="pct-a">${prior.pa}%</span>
+    </div>
+    <div class="bayes-row" style="margin-top:6px">
+      <span class="odds-label" style="color:#818cf8;font-size:10px">🧮 貝葉斯</span>
+      <div class="bayes-bar-wrap">
+        <div class="bb-h" style="width:${bayes.bh/t_bayes*100}%"></div>
+        <div class="bb-d" style="width:${bayes.bd/t_bayes*100}%"></div>
+        <div class="bb-a" style="width:${bayes.ba/t_bayes*100}%"></div>
+      </div>
+    </div>
+    <div class="bayes-pcts">
+      <span class="pct-bh">${bayes.bh}%${deltaArrow(prior.ph,bayes.bh)}</span>
+      <span class="pct-bd">${bayes.bd}%</span>
+      <span class="pct-ba">${bayes.ba}%${deltaArrow(prior.pa,bayes.ba)}</span>
+    </div>
+  </td>`;
+}
+
+function badgeHtml(g) {
+  const live = g.s==='live'||g.s==='inprogress';
+  if (live) return `<span class="badge b-live">⚡ 直播中</span>`;
+  if (g.s==='final') return `<span class="badge b-final">✓ 結束</span>`;
+  return `<span class="badge b-sched">即將開賽</span>`;
+}
+
+function tagHtml(g) {
+  let t = '';
+  if (g.upset) t += `<span class="tag tag-upset">爆冷 🌪</span>`;
+  if ((g.hs+g.as) >= 5) t += `<span class="tag tag-big">大比分</span>`;
+  if (g.hs===g.as && g.s==='final' && g.ph && g.ph > 65) t += `<span class="tag tag-upset">冷平</span>`;
+  return t || `<span style="color:var(--text3);font-size:11px">—</span>`;
+}
+
+function addDateDiv(tbody, label, colspan=7) {
+  const dr = document.createElement('tr');
+  dr.className = 'date-div';
+  dr.innerHTML = `<td colspan="${colspan}">📅 ${label}</td>`;
+  tbody.appendChild(dr);
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ══════════════════════════════════════════════════════
+function renderAll() {
+  const profiles = buildTeamProfiles();
+  const today = todayLabel();
+  const history  = ALL_GAMES.filter(g => g.s === 'final');
+  const upcoming = ALL_GAMES.filter(g => g.s === 'scheduled' || g.s === 'live' || g.s === 'inprogress');
+  const todayGames = ALL_GAMES.filter(g => fmtTW(g.t).date === today);
+
+  document.getElementById('s-total').textContent  = ALL_GAMES.length;
+  document.getElementById('s-final').textContent  = history.length;
+  document.getElementById('s-live').textContent   = ALL_GAMES.filter(g=>g.s==='live'||g.s==='inprogress').length;
+  document.getElementById('s-sched').textContent  = upcoming.filter(g=>g.s==='scheduled').length;
+  document.getElementById('cnt-upcoming').textContent = upcoming.length;
+  document.getElementById('cnt-today').textContent    = todayGames.length;
+  document.getElementById('cnt-history').textContent  = history.length;
+
+  renderUpcoming(upcoming, profiles);
+  renderToday(todayGames, profiles);
+  renderHistory(history);
+}
+
+function renderUpcoming(games, profiles) {
+  const tbody = document.getElementById('tbody-upcoming');
+  const gf = chipState['ug'];
+  const filtered = gf==='all' ? games : games.filter(g => GROUPMAP[g.h]===gf);
+  tbody.innerHTML = '';
+  if (!filtered.length) { tbody.innerHTML=`<tr class="empty"><td colspan="7">暫無符合條件的賽事</td></tr>`; return; }
+  let last = '';
+  filtered.forEach(g => {
+    const t = fmtTW(g.t);
+    if (t.date !== last) { last=t.date; addDateDiv(tbody, t.date); }
+    const tr = document.createElement('tr');
+    const oddsHTML = oddsCellHtml(g, profiles);
+    tr.innerHTML = `
+      <td style="color:var(--text2);font-size:12px">${t.date}</td>
+      <td style="color:var(--text2);font-size:12px">${t.time}</td>
+      <td><span class="grp-tag">小組賽 ${GROUPMAP[g.h]}組</span></td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname">${ZH[g.h]||g.h}</span></div></td>
+      ${oddsHTML}
+      <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname">${ZH[g.a]||g.a}</span></div></td>
+      <td style="text-align:center">${badgeHtml(g)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderToday(games, profiles) {
+  const tbody = document.getElementById('tbody-today');
+  tbody.innerHTML = '';
+  if (!games.length) { tbody.innerHTML=`<tr class="empty"><td colspan="6">今日暫無賽事</td></tr>`; return; }
+  let last = '';
+  games.forEach(g => {
+    const t = fmtTW(g.t);
+    if (t.date !== last) { last=t.date; addDateDiv(tbody, t.date, 6); }
+    const hw=g.s==='final'&&g.hs>g.as, aw=g.s==='final'&&g.as>g.hs;
+    const tr = document.createElement('tr');
+    if (g.s==='live'||g.s==='inprogress') tr.style.background='rgba(220,38,38,0.04)';
+
+    // Scheduled → full odds+bayes cell (same as upcoming tab)
+    // Final/Live → score cell
+    let midCell;
+    if (g.s === 'scheduled') {
+      midCell = oddsCellHtml(g, profiles);
+    } else {
+      midCell = `<td style="text-align:center">${scoreHtml(g)}</td>`;
+    }
+
+    tr.innerHTML = `
+      <td style="color:var(--text2);font-size:12px">${t.time}</td>
+      <td><span class="grp-tag">小組賽 ${GROUPMAP[g.h]}組</span></td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname${hw?' w':''}">${ZH[g.h]||g.h}</span></div></td>
+      ${midCell}
+      <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname${aw?' w':''}">${ZH[g.a]||g.a}</span></div></td>
+      <td style="text-align:center">${badgeHtml(g)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderHistory(games) {
+  const tbody = document.getElementById('tbody-history');
+  const f = chipState['hf'];
+  let filtered = [...games];
+  if (f==='upset') filtered = filtered.filter(g => g.upset);
+  else if (f==='high') filtered = filtered.filter(g => (g.hs+g.as)>=3);
+  else if (f==='draw') filtered = filtered.filter(g => g.hs===g.as);
+  filtered.reverse();
+  tbody.innerHTML = '';
+  if (!filtered.length) { tbody.innerHTML=`<tr class="empty"><td colspan="7">暫無符合條件的比賽</td></tr>`; return; }
+  let last = '';
+  filtered.forEach(g => {
+    const t = fmtTW(g.t);
+    if (t.date !== last) { last=t.date; addDateDiv(tbody, t.date); }
+    const hw=g.hs>g.as, aw=g.as>g.hs;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="color:var(--text2);font-size:12px">${t.date}</td>
+      <td style="color:var(--text2);font-size:12px">${t.time}</td>
+      <td><span class="grp-tag">小組賽 ${GROUPMAP[g.h]}組</span></td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname${hw?' w':aw?' l':''}">${ZH[g.h]||g.h}</span></div></td>
+      <td style="text-align:center">${scoreHtml(g)}</td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname${aw?' w':hw?' l':''}">${ZH[g.a]||g.a}</span></div></td>
+      <td style="text-align:center">${tagHtml(g)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// MAIN LOAD
+// ══════════════════════════════════════════════════════
+async function loadData() {
+  const btn = document.getElementById('refresh-btn');
+  const icon = document.getElementById('refresh-icon');
+  btn.disabled = true; icon.classList.add('spinning');
+
+  await fetchOdds();
+  renderAll();
+
+  const now = new Date();
+  document.getElementById('update-time').textContent = '更新於 '+now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('footer-time').textContent = '最後更新：'+now.toLocaleString('zh-TW');
+  btn.disabled = false; icon.classList.remove('spinning');
+}
+
+// Init
+(async () => {
+  await fetchOdds();
+  renderAll();
+  const n = new Date();
+  document.getElementById('update-time').textContent = '更新於 '+n.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('footer-time').textContent = '最後更新：'+n.toLocaleString('zh-TW');
+
+  // Auto-switch to today if applicable
+  const tl = todayLabel();
+  if (ALL_GAMES.some(g => fmtTW(g.t).date === tl)) switchTab('today');
+})();
+</script>
+</body>
+</html>
