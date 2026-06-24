@@ -163,41 +163,42 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
   <div class="logo">
     <div class="logo-icon">🏆</div>
     <div>
-      <h1>FIFA 世界盃 2026</h1>
-      <p>美國 · 加拿大 · 墨西哥 &nbsp;|&nbsp; 48隊 · 104場</p>
+      <h1 data-i18n="title">FIFA 世界盃 2026</h1>
+      <p data-i18n="subtitle">美國 · 加拿大 · 墨西哥 &nbsp;|&nbsp; 48隊 · 104場</p>
     </div>
   </div>
   <div class="header-right">
     <span class="odds-status odds-loading" id="odds-status">⏳ 賠率載入中…</span>
     <span class="odds-status odds-loading" id="score-status">⏳ 比分載入中…</span>
-    <div class="live-pill"><span class="live-dot"></span><span id="update-time">載入中…</span></div>
+    <div class="live-pill"><span class="live-dot"></span><span id="update-time" data-i18n="loading">載入中…</span></div>
+    <button class="btn" id="lang-btn" onclick="toggleLang()" title="切換語言 / Switch language">🌐 <span id="lang-label">EN</span></button>
     <button class="btn" id="refresh-btn" onclick="loadData()">
       <svg id="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
         <path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
         <path d="M3 21v-5h5"/>
       </svg>
-      更新
+      <span data-i18n="refresh">更新</span>
     </button>
   </div>
 </header>
 
 <div class="stats-bar">
-  <div class="stat"><div class="stat-n" id="s-total">—</div><div class="stat-l">總場次</div></div>
-  <div class="stat"><div class="stat-n" style="color:#4ade80" id="s-final">—</div><div class="stat-l">已結束</div></div>
-  <div class="stat"><div class="stat-n" style="color:#f87171" id="s-live">—</div><div class="stat-l">直播中</div></div>
-  <div class="stat"><div class="stat-n" style="color:#60a5fa" id="s-sched">—</div><div class="stat-l">即將開賽</div></div>
+  <div class="stat"><div class="stat-n" id="s-total">—</div><div class="stat-l" data-i18n="st-total">總場次</div></div>
+  <div class="stat"><div class="stat-n" style="color:#4ade80" id="s-final">—</div><div class="stat-l" data-i18n="st-final">已結束</div></div>
+  <div class="stat"><div class="stat-n" style="color:#f87171" id="s-live">—</div><div class="stat-l" data-i18n="st-live">直播中</div></div>
+  <div class="stat"><div class="stat-n" style="color:#60a5fa" id="s-sched">—</div><div class="stat-l" data-i18n="st-sched">即將開賽</div></div>
 </div>
 
 <div class="tabs-bar">
-  <button class="tab active" id="tab-upcoming" onclick="switchTab('upcoming')">即將開賽 <span class="cnt" id="cnt-upcoming">—</span></button>
-  <button class="tab" id="tab-today" onclick="switchTab('today')">今日賽事 <span class="cnt" id="cnt-today">—</span></button>
-  <button class="tab" id="tab-history" onclick="switchTab('history')">歷史紀錄 <span class="cnt" id="cnt-history">—</span></button>
+  <button class="tab active" id="tab-upcoming" onclick="switchTab('upcoming')"><span data-i18n="tab-upcoming">即將開賽</span> <span class="cnt" id="cnt-upcoming">—</span></button>
+  <button class="tab" id="tab-today" onclick="switchTab('today')"><span data-i18n="tab-today">今日賽事</span> <span class="cnt" id="cnt-today">—</span></button>
+  <button class="tab" id="tab-history" onclick="switchTab('history')"><span data-i18n="tab-history">歷史紀錄</span> <span class="cnt" id="cnt-history">—</span></button>
 </div>
 
 <!-- UPCOMING -->
 <div class="panel active" id="panel-upcoming">
-  <div class="info-box">
+  <div class="info-box" data-i18n-html="info-box">
     <strong>貝葉斯動態修正說明</strong>：
     <strong style="color:var(--accent)">藍色</strong> = 外盤賠率隱含概率（先驗），
     <strong style="color:#818cf8">紫色</strong> = 貝葉斯修正後概率（後驗）。
@@ -205,25 +206,25 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
     箭頭 <span style="color:var(--green)">↑</span> 表示修正後勝率上升，<span style="color:var(--red)">↓</span> 表示下降。
   </div>
   <div class="filter-row">
-    <span class="filter-label">組別：</span>
-    <button class="chip active" onclick="setChip(this,'ug','all')">全部</button>
-    <button class="chip" onclick="setChip(this,'ug','A')">A組</button>
-    <button class="chip" onclick="setChip(this,'ug','B')">B組</button>
-    <button class="chip" onclick="setChip(this,'ug','C')">C組</button>
-    <button class="chip" onclick="setChip(this,'ug','D')">D組</button>
-    <button class="chip" onclick="setChip(this,'ug','E')">E組</button>
-    <button class="chip" onclick="setChip(this,'ug','F')">F組</button>
-    <button class="chip" onclick="setChip(this,'ug','G')">G組</button>
-    <button class="chip" onclick="setChip(this,'ug','H')">H組</button>
-    <button class="chip" onclick="setChip(this,'ug','I')">I組</button>
-    <button class="chip" onclick="setChip(this,'ug','J')">J組</button>
-    <button class="chip" onclick="setChip(this,'ug','K')">K組</button>
-    <button class="chip" onclick="setChip(this,'ug','L')">L組</button>
+    <span class="filter-label" data-i18n="f-group">組別：</span>
+    <button class="chip active" onclick="setChip(this,'ug','all')" data-i18n="all">全部</button>
+    <button class="chip" onclick="setChip(this,'ug','A')" data-grp="A">A組</button>
+    <button class="chip" onclick="setChip(this,'ug','B')" data-grp="B">B組</button>
+    <button class="chip" onclick="setChip(this,'ug','C')" data-grp="C">C組</button>
+    <button class="chip" onclick="setChip(this,'ug','D')" data-grp="D">D組</button>
+    <button class="chip" onclick="setChip(this,'ug','E')" data-grp="E">E組</button>
+    <button class="chip" onclick="setChip(this,'ug','F')" data-grp="F">F組</button>
+    <button class="chip" onclick="setChip(this,'ug','G')" data-grp="G">G組</button>
+    <button class="chip" onclick="setChip(this,'ug','H')" data-grp="H">H組</button>
+    <button class="chip" onclick="setChip(this,'ug','I')" data-grp="I">I組</button>
+    <button class="chip" onclick="setChip(this,'ug','J')" data-grp="J">J組</button>
+    <button class="chip" onclick="setChip(this,'ug','K')" data-grp="K">K組</button>
+    <button class="chip" onclick="setChip(this,'ug','L')" data-grp="L">L組</button>
   </div>
   <div class="table-wrap"><table>
     <thead><tr>
-      <th>日期</th><th>時間(台)</th><th>組別</th>
-      <th>主隊</th><th class="c">賠率概率 → 貝葉斯修正</th><th>客隊</th><th class="c">狀態</th>
+      <th data-i18n="th-date">日期</th><th data-i18n="th-time">時間(台)</th><th data-i18n="th-group">組別</th>
+      <th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-odds">賠率概率 → 貝葉斯修正</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-status">狀態</th>
     </tr></thead>
     <tbody id="tbody-upcoming"></tbody>
   </table></div>
@@ -232,7 +233,7 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
 <!-- TODAY -->
 <div class="panel" id="panel-today">
   <div class="table-wrap"><table>
-    <thead><tr><th>時間(台)</th><th>組別</th><th>主隊</th><th class="c">比分 / 賠率概率 → 貝葉斯修正</th><th>客隊</th><th class="c">狀態</th></tr></thead>
+    <thead><tr><th data-i18n="th-time">時間(台)</th><th data-i18n="th-group">組別</th><th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-score-odds">比分 / 賠率概率 → 貝葉斯修正</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-status">狀態</th></tr></thead>
     <tbody id="tbody-today"></tbody>
   </table></div>
 </div>
@@ -240,23 +241,23 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
 <!-- HISTORY -->
 <div class="panel" id="panel-history">
   <div class="filter-row">
-    <span class="filter-label">篩選：</span>
-    <button class="chip active" onclick="setChip(this,'hf','all')">全部</button>
-    <button class="chip" onclick="setChip(this,'hf','upset')">爆冷 🌪</button>
-    <button class="chip" onclick="setChip(this,'hf','high')">大比分 (3+球)</button>
-    <button class="chip" onclick="setChip(this,'hf','draw')">平局</button>
+    <span class="filter-label" data-i18n="f-filter">篩選：</span>
+    <button class="chip active" onclick="setChip(this,'hf','all')" data-i18n="all">全部</button>
+    <button class="chip" onclick="setChip(this,'hf','upset')" data-i18n="f-upset">爆冷 🌪</button>
+    <button class="chip" onclick="setChip(this,'hf','high')" data-i18n="f-high">大比分 (3+球)</button>
+    <button class="chip" onclick="setChip(this,'hf','draw')" data-i18n="f-draw">平局</button>
   </div>
   <div class="table-wrap"><table>
     <thead><tr>
-      <th>日期</th><th>時間(台)</th><th>組別</th>
-      <th>主隊</th><th class="c">比分</th><th>客隊</th><th class="c">標記</th>
+      <th data-i18n="th-date">日期</th><th data-i18n="th-time">時間(台)</th><th data-i18n="th-group">組別</th>
+      <th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-score">比分</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-tag">標記</th>
     </tr></thead>
     <tbody id="tbody-history"></tbody>
   </table></div>
 </div>
 
 <div class="footer">
-  <span>賠率來源：The Odds API（外盤歐賠）· 台灣時間 · 貝葉斯修正：依本屆小組賽實際表現動態更新</span>
+  <span data-i18n="footer">賠率來源：The Odds API（外盤歐賠）· 台灣時間 · 貝葉斯修正：依本屆小組賽實際表現動態更新</span>
   <span id="footer-time"></span>
 </div>
 
@@ -266,6 +267,130 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
 // ══════════════════════════════════════════════════════
 const ODDS_API_KEY = '023ee379fbdbea2274371b447449b272';
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
+
+// ══════════════════════════════════════════════════════
+// I18N — 繁體中文 / English
+// ══════════════════════════════════════════════════════
+// 語言判斷：localStorage 優先 → 瀏覽器語言（zh 系列→繁中，其餘→英文）
+function detectLang() {
+  const saved = localStorage.getItem('fifa-lang');
+  if (saved === 'zh' || saved === 'en') return saved;
+  const nav = (navigator.language || 'en').toLowerCase();
+  return nav.startsWith('zh') ? 'zh' : 'en';
+}
+let lang = detectLang();
+
+const I18N = {
+  title:      { zh:'FIFA 世界盃 2026', en:'FIFA World Cup 2026' },
+  subtitle:   { zh:'美國 · 加拿大 · 墨西哥  |  48隊 · 104場', en:'USA · Canada · Mexico  |  48 Teams · 104 Matches' },
+  loading:    { zh:'載入中…', en:'Loading…' },
+  refresh:    { zh:'更新', en:'Refresh' },
+  'st-total': { zh:'總場次', en:'Total' },
+  'st-final': { zh:'已結束', en:'Finished' },
+  'st-live':  { zh:'直播中', en:'Live' },
+  'st-sched': { zh:'即將開賽', en:'Upcoming' },
+  'tab-upcoming': { zh:'即將開賽', en:'Upcoming' },
+  'tab-today':    { zh:'今日賽事', en:'Today' },
+  'tab-history':  { zh:'歷史紀錄', en:'History' },
+  'info-box': {
+    zh:'<strong>貝葉斯動態修正說明</strong>：<strong style="color:var(--accent)">藍色</strong> = 外盤賠率隱含概率（先驗），<strong style="color:#818cf8">紫色</strong> = 貝葉斯修正後概率（後驗）。修正依據：同組已完成比賽的實際表現 vs 預期差異，進球數、爆冷記錄、防守表現均納入計算。箭頭 <span style="color:var(--green)">↑</span> 表示修正後勝率上升，<span style="color:var(--red)">↓</span> 表示下降。',
+    en:'<strong>Bayesian dynamic adjustment</strong>: <strong style="color:var(--accent)">Blue</strong> = bookmaker odds-implied probability (prior), <strong style="color:#818cf8">Purple</strong> = Bayesian-adjusted probability (posterior). Adjusted from actual vs expected performance of completed group matches — goals, upsets and defensive record are all factored in. Arrow <span style="color:var(--green)">↑</span> = win probability rose after adjustment, <span style="color:var(--red)">↓</span> = fell.'
+  },
+  'f-group':  { zh:'組別：', en:'Group:' },
+  'f-filter': { zh:'篩選：', en:'Filter:' },
+  'f-upset':  { zh:'爆冷 🌪', en:'Upset 🌪' },
+  'f-high':   { zh:'大比分 (3+球)', en:'High score (3+)' },
+  'f-draw':   { zh:'平局', en:'Draw' },
+  all:        { zh:'全部', en:'All' },
+  'th-date':  { zh:'日期', en:'Date' },
+  'th-time':  { zh:'時間(台)', en:'Time (TW)' },
+  'th-group': { zh:'組別', en:'Group' },
+  'th-home':  { zh:'主隊', en:'Home' },
+  'th-away':  { zh:'客隊', en:'Away' },
+  'th-status':{ zh:'狀態', en:'Status' },
+  'th-score': { zh:'比分', en:'Score' },
+  'th-tag':   { zh:'標記', en:'Tags' },
+  'th-odds':  { zh:'賠率概率 → 貝葉斯修正', en:'Odds prob. → Bayesian' },
+  'th-score-odds': { zh:'比分 / 賠率概率 → 貝葉斯修正', en:'Score / Odds prob. → Bayesian' },
+  footer:     { zh:'賠率來源：The Odds API（外盤歐賠）· 台灣時間 · 貝葉斯修正：依本屆小組賽實際表現動態更新', en:'Odds: The Odds API (EU decimal) · Taiwan time · Bayesian adjustment from this tournament’s group-stage form' },
+  // dynamic
+  groupStage: { zh:'小組賽', en:'Group' },
+  bLive:      { zh:'⚡ 直播中', en:'⚡ Live' },
+  bFinal:     { zh:'✓ 結束', en:'✓ Final' },
+  bSched:     { zh:'即將開賽', en:'Upcoming' },
+  tUpset:     { zh:'爆冷 🌪', en:'Upset 🌪' },
+  tBig:       { zh:'大比分', en:'High score' },
+  tColdDraw:  { zh:'冷平', en:'Shock draw' },
+  oH:         { zh:'主', en:'H' },
+  oD:         { zh:'平', en:'D' },
+  oA:         { zh:'客', en:'A' },
+  oOdds:      { zh:'賠率', en:'Odds' },
+  oBayes:     { zh:'貝葉斯', en:'Bayes' },
+  oddsLoading:{ zh:'— 賠率載入中', en:'— loading odds' },
+  emptyUpcoming:{ zh:'暫無符合條件的賽事', en:'No matches for this filter' },
+  emptyToday: { zh:'今日暫無賽事', en:'No matches today' },
+  emptyHistory:{ zh:'暫無符合條件的比賽', en:'No matches for this filter' },
+  updatedAt:  { zh:'更新於 ', en:'Updated ' },
+  lastUpdate: { zh:'最後更新：', en:'Last updated: ' },
+  oddsFetching:{ zh:'⏳ 拉取外盤賠率…', en:'⏳ Fetching odds…' },
+  oddsOk:     { zh:n=>`✓ 外盤賠率已載入 (${n} 場)`, en:n=>`✓ Odds loaded (${n})` },
+  oddsErr:    { zh:'⚠ 賠率離線（使用備用數據）', en:'⚠ Odds offline (using fallback)' },
+  scoreFetching:{ zh:'⏳ 拉取即時比分…', en:'⏳ Fetching scores…' },
+  scoreOk:    { zh:n=>`✓ 即時比分已更新 (${n} 場)`, en:n=>`✓ Scores updated (${n})` },
+  scoreErr:   { zh:'⚠ 比分離線（使用既有數據）', en:'⚠ Scores offline (using cached)' },
+};
+// 取翻譯：t('key') 或 t('key', arg)（值為函式時）
+function t(key, arg) {
+  const e = I18N[key];
+  if (!e) return key;
+  const v = e[lang] !== undefined ? e[lang] : e.zh;
+  return typeof v === 'function' ? v(arg) : v;
+}
+const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const LOCALE = { zh:'zh-TW', en:'en-US' };
+
+// 英文隊名
+const EN = {
+  MEX:'Mexico',RSA:'South Africa',KOR:'South Korea',CZE:'Czechia',CAN:'Canada',BIH:'Bosnia & Herz.',USA:'USA',PAR:'Paraguay',
+  QAT:'Qatar',SUI:'Switzerland',BRA:'Brazil',MAR:'Morocco',HTI:'Haiti',SCO:'Scotland',AUS:'Australia',TUR:'Türkiye',
+  GER:'Germany',CIV:'Côte d’Ivoire',ECU:'Ecuador',CUW:'Curaçao',NED:'Netherlands',JPN:'Japan',TUN:'Tunisia',SWE:'Sweden',
+  BEL:'Belgium',EGY:'Egypt',IRN:'Iran',NZL:'New Zealand',ESP:'Spain',URU:'Uruguay',KSA:'Saudi Arabia',CPV:'Cape Verde',
+  FRA:'France',SEN:'Senegal',NOR:'Norway',IRQ:'Iraq',ARG:'Argentina',DZA:'Algeria',AUT:'Austria',JOR:'Jordan',
+  POR:'Portugal',UZB:'Uzbekistan',COL:'Colombia',COD:'DR Congo',ENG:'England',CRO:'Croatia',GHA:'Ghana',PAN:'Panama'
+};
+// 依語言取隊名
+function teamName(abbr) { return (lang==='en' ? EN[abbr] : ZH[abbr]) || abbr; }
+// 組別標籤：中文「小組賽 A組」/ 英文「Group A」
+function groupTag(abbr) {
+  const g = GROUPMAP[abbr];
+  return (lang==='zh' ? `小組賽 ${g}組` : `Group ${g}`);
+}
+
+// 套用所有靜態文字 + 切換鈕標籤
+function applyStaticI18n() {
+  document.documentElement.lang = (lang==='zh' ? 'zh-Hant' : 'en');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    el.innerHTML = t(el.getAttribute('data-i18n-html'));
+  });
+  // 組別 chips：中文「A組」/ 英文「Group A」
+  document.querySelectorAll('[data-grp]').forEach(el => {
+    const g = el.getAttribute('data-grp');
+    el.textContent = (lang==='zh' ? `${g}組` : `Group ${g}`);
+  });
+  // 切換鈕顯示「另一個語言」
+  document.getElementById('lang-label').textContent = (lang==='zh' ? 'EN' : '繁中');
+}
+
+function toggleLang() {
+  lang = (lang==='zh' ? 'en' : 'zh');
+  localStorage.setItem('fifa-lang', lang);
+  applyStaticI18n();
+  renderAll();
+  stampTime();   // 重新格式化時間文字
+}
 
 // ══════════════════════════════════════════════════════
 // LOOKUP TABLES
@@ -464,7 +589,7 @@ let oddsLoaded = false;
 
 async function fetchOdds() {
   try {
-    document.getElementById('odds-status').textContent = '⏳ 拉取外盤賠率…';
+    document.getElementById('odds-status').textContent = t('oddsFetching');
     document.getElementById('odds-status').className = 'odds-status odds-loading';
 
     const url = `${ODDS_API_BASE}/sports/soccer_fifa_world_cup/odds/?apiKey=${ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal`;
@@ -499,11 +624,11 @@ async function fetchOdds() {
 
     const count = Object.keys(liveOdds).length;
     oddsLoaded = true;
-    document.getElementById('odds-status').textContent = `✓ 外盤賠率已載入 (${count} 場)`;
+    document.getElementById('odds-status').textContent = t('oddsOk', count);
     document.getElementById('odds-status').className = 'odds-status odds-ok';
     return true;
   } catch(e) {
-    document.getElementById('odds-status').textContent = `⚠ 賠率離線（使用備用數據）`;
+    document.getElementById('odds-status').textContent = t('oddsErr');
     document.getElementById('odds-status').className = 'odds-status odds-err';
     return false;
   }
@@ -517,7 +642,7 @@ async function fetchOdds() {
 async function fetchScores() {
   const el = document.getElementById('score-status');
   try {
-    el.textContent = '⏳ 拉取即時比分…';
+    el.textContent = t('scoreFetching');
     el.className = 'odds-status odds-loading';
 
     // daysFrom 可選 1~3：回傳「現在起 + 過去 N 天內開賽」的賽事（含直播/已完賽）
@@ -555,11 +680,11 @@ async function fetchScores() {
       updated++;
     });
 
-    el.textContent = `✓ 即時比分已更新 (${updated} 場)`;
+    el.textContent = t('scoreOk', updated);
     el.className = 'odds-status odds-ok';
     return true;
   } catch(e) {
-    el.textContent = `⚠ 比分離線（使用既有數據）`;
+    el.textContent = t('scoreErr');
     el.className = 'odds-status odds-err';
     return false;
   }
@@ -607,16 +732,25 @@ function switchTab(tab) {
 // ══════════════════════════════════════════════════════
 // HTML HELPERS
 // ══════════════════════════════════════════════════════
+function dateLabel(d) {
+  const mo = d.getMonth()+1, day = d.getDate();
+  return (lang==='en' ? `${MONTHS_EN[d.getMonth()]} ${day}` : `${mo}月${day}日`);
+}
 function fmtTW(localStr) {
   const d = new Date(localStr+':00');
-  const mo = d.getMonth()+1, day = d.getDate();
   const hh = String(d.getHours()).padStart(2,'0');
   const mm = String(d.getMinutes()).padStart(2,'0');
-  return {date:`${mo}月${day}日`, time:`${hh}:${mm}`, ts:d.getTime()};
+  return {date:dateLabel(d), time:`${hh}:${mm}`, ts:d.getTime()};
 }
 function todayLabel() {
-  const d = new Date();
-  return `${d.getMonth()+1}月${d.getDate()}日`;
+  return dateLabel(new Date());
+}
+// 重新格式化頂部與頁尾時間戳（語言切換時也要更新）
+function stampTime() {
+  const now = new Date();
+  const loc = LOCALE[lang];
+  document.getElementById('update-time').textContent = t('updatedAt')+now.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('footer-time').textContent = t('lastUpdate')+now.toLocaleString(loc);
 }
 
 function scoreHtml(g) {
@@ -637,7 +771,7 @@ function oddsCellHtml(g, profiles) {
   const odds = getOddsForGame(g);
 
   if (!odds) {
-    return `<td class="odds-cell" style="color:var(--text3);font-size:12px">— 賠率載入中</td>`;
+    return `<td class="odds-cell" style="color:var(--text3);font-size:12px">${t('oddsLoading')}</td>`;
   }
 
   const prior = oddsToProb(odds.home, odds.draw, odds.away);
@@ -647,13 +781,13 @@ function oddsCellHtml(g, profiles) {
 
   return `<td class="odds-cell">
     <div class="raw-odds">
-      <span class="odds-pill">主 <span>${odds.home}</span></span>
-      <span class="odds-pill">平 <span>${odds.draw}</span></span>
-      <span class="odds-pill">客 <span>${odds.away}</span></span>
+      <span class="odds-pill">${t('oH')} <span>${odds.home}</span></span>
+      <span class="odds-pill">${t('oD')} <span>${odds.draw}</span></span>
+      <span class="odds-pill">${t('oA')} <span>${odds.away}</span></span>
       <span style="font-size:10px;color:var(--text3);margin-left:2px">${odds.bookmaker}</span>
     </div>
     <div class="odds-row">
-      <span class="odds-label" style="color:var(--accent);font-size:10px">📊 賠率</span>
+      <span class="odds-label" style="color:var(--accent);font-size:10px">📊 ${t('oOdds')}</span>
       <div class="odds-bar-wrap">
         <div class="ob-h" style="width:${prior.ph/t_prior*100}%"></div>
         <div class="ob-d" style="width:${prior.pd/t_prior*100}%"></div>
@@ -666,7 +800,7 @@ function oddsCellHtml(g, profiles) {
       <span class="pct-a">${prior.pa}%</span>
     </div>
     <div class="bayes-row" style="margin-top:6px">
-      <span class="odds-label" style="color:#818cf8;font-size:10px">🧮 貝葉斯</span>
+      <span class="odds-label" style="color:#818cf8;font-size:10px">🧮 ${t('oBayes')}</span>
       <div class="bayes-bar-wrap">
         <div class="bb-h" style="width:${bayes.bh/t_bayes*100}%"></div>
         <div class="bb-d" style="width:${bayes.bd/t_bayes*100}%"></div>
@@ -683,17 +817,17 @@ function oddsCellHtml(g, profiles) {
 
 function badgeHtml(g) {
   const live = g.s==='live'||g.s==='inprogress';
-  if (live) return `<span class="badge b-live">⚡ 直播中</span>`;
-  if (g.s==='final') return `<span class="badge b-final">✓ 結束</span>`;
-  return `<span class="badge b-sched">即將開賽</span>`;
+  if (live) return `<span class="badge b-live">${t('bLive')}</span>`;
+  if (g.s==='final') return `<span class="badge b-final">${t('bFinal')}</span>`;
+  return `<span class="badge b-sched">${t('bSched')}</span>`;
 }
 
 function tagHtml(g) {
-  let t = '';
-  if (g.upset) t += `<span class="tag tag-upset">爆冷 🌪</span>`;
-  if ((g.hs+g.as) >= 5) t += `<span class="tag tag-big">大比分</span>`;
-  if (g.hs===g.as && g.s==='final' && g.ph && g.ph > 65) t += `<span class="tag tag-upset">冷平</span>`;
-  return t || `<span style="color:var(--text3);font-size:11px">—</span>`;
+  let s = '';
+  if (g.upset) s += `<span class="tag tag-upset">${t('tUpset')}</span>`;
+  if ((g.hs+g.as) >= 5) s += `<span class="tag tag-big">${t('tBig')}</span>`;
+  if (g.hs===g.as && g.s==='final' && g.ph && g.ph > 65) s += `<span class="tag tag-upset">${t('tColdDraw')}</span>`;
+  return s || `<span style="color:var(--text3);font-size:11px">—</span>`;
 }
 
 function addDateDiv(tbody, label, colspan=7) {
@@ -731,7 +865,7 @@ function renderUpcoming(games, profiles) {
   const gf = chipState['ug'];
   const filtered = gf==='all' ? games : games.filter(g => GROUPMAP[g.h]===gf);
   tbody.innerHTML = '';
-  if (!filtered.length) { tbody.innerHTML=`<tr class="empty"><td colspan="7">暫無符合條件的賽事</td></tr>`; return; }
+  if (!filtered.length) { tbody.innerHTML=`<tr class="empty"><td colspan="7">${t('emptyUpcoming')}</td></tr>`; return; }
   let last = '';
   filtered.forEach(g => {
     const t = fmtTW(g.t);
@@ -741,10 +875,10 @@ function renderUpcoming(games, profiles) {
     tr.innerHTML = `
       <td style="color:var(--text2);font-size:12px">${t.date}</td>
       <td style="color:var(--text2);font-size:12px">${t.time}</td>
-      <td><span class="grp-tag">小組賽 ${GROUPMAP[g.h]}組</span></td>
-      <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname">${ZH[g.h]||g.h}</span></div></td>
+      <td><span class="grp-tag">${groupTag(g.h)}</span></td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname">${teamName(g.h)}</span></div></td>
       ${oddsHTML}
-      <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname">${ZH[g.a]||g.a}</span></div></td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname">${teamName(g.a)}</span></div></td>
       <td style="text-align:center">${badgeHtml(g)}</td>`;
     tbody.appendChild(tr);
   });
@@ -753,7 +887,7 @@ function renderUpcoming(games, profiles) {
 function renderToday(games, profiles) {
   const tbody = document.getElementById('tbody-today');
   tbody.innerHTML = '';
-  if (!games.length) { tbody.innerHTML=`<tr class="empty"><td colspan="6">今日暫無賽事</td></tr>`; return; }
+  if (!games.length) { tbody.innerHTML=`<tr class="empty"><td colspan="6">${t('emptyToday')}</td></tr>`; return; }
   let last = '';
   games.forEach(g => {
     const t = fmtTW(g.t);
@@ -773,10 +907,10 @@ function renderToday(games, profiles) {
 
     tr.innerHTML = `
       <td style="color:var(--text2);font-size:12px">${t.time}</td>
-      <td><span class="grp-tag">小組賽 ${GROUPMAP[g.h]}組</span></td>
-      <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname${hw?' w':''}">${ZH[g.h]||g.h}</span></div></td>
+      <td><span class="grp-tag">${groupTag(g.h)}</span></td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname${hw?' w':''}">${teamName(g.h)}</span></div></td>
       ${midCell}
-      <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname${aw?' w':''}">${ZH[g.a]||g.a}</span></div></td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname${aw?' w':''}">${teamName(g.a)}</span></div></td>
       <td style="text-align:center">${badgeHtml(g)}</td>`;
     tbody.appendChild(tr);
   });
@@ -791,7 +925,7 @@ function renderHistory(games) {
   else if (f==='draw') filtered = filtered.filter(g => g.hs===g.as);
   filtered.reverse();
   tbody.innerHTML = '';
-  if (!filtered.length) { tbody.innerHTML=`<tr class="empty"><td colspan="7">暫無符合條件的比賽</td></tr>`; return; }
+  if (!filtered.length) { tbody.innerHTML=`<tr class="empty"><td colspan="7">${t('emptyHistory')}</td></tr>`; return; }
   let last = '';
   filtered.forEach(g => {
     const t = fmtTW(g.t);
@@ -801,10 +935,10 @@ function renderHistory(games) {
     tr.innerHTML = `
       <td style="color:var(--text2);font-size:12px">${t.date}</td>
       <td style="color:var(--text2);font-size:12px">${t.time}</td>
-      <td><span class="grp-tag">小組賽 ${GROUPMAP[g.h]}組</span></td>
-      <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname${hw?' w':aw?' l':''}">${ZH[g.h]||g.h}</span></div></td>
+      <td><span class="grp-tag">${groupTag(g.h)}</span></td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname${hw?' w':aw?' l':''}">${teamName(g.h)}</span></div></td>
       <td style="text-align:center">${scoreHtml(g)}</td>
-      <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname${aw?' w':hw?' l':''}">${ZH[g.a]||g.a}</span></div></td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname${aw?' w':hw?' l':''}">${teamName(g.a)}</span></div></td>
       <td style="text-align:center">${tagHtml(g)}</td>`;
     tbody.appendChild(tr);
   });
@@ -820,20 +954,16 @@ async function loadData() {
 
   await Promise.all([fetchOdds(), fetchScores()]);
   renderAll();
-
-  const now = new Date();
-  document.getElementById('update-time').textContent = '更新於 '+now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  document.getElementById('footer-time').textContent = '最後更新：'+now.toLocaleString('zh-TW');
+  stampTime();
   btn.disabled = false; icon.classList.remove('spinning');
 }
 
 // Init
 (async () => {
+  applyStaticI18n();   // 依偵測到的語言先套用靜態文字
   await Promise.all([fetchOdds(), fetchScores()]);
   renderAll();
-  const n = new Date();
-  document.getElementById('update-time').textContent = '更新於 '+n.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  document.getElementById('footer-time').textContent = '最後更新：'+n.toLocaleString('zh-TW');
+  stampTime();
 
   // Auto-switch to today if applicable
   const tl = todayLabel();
