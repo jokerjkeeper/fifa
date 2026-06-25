@@ -422,7 +422,7 @@ const ZH={
 // Maps Odds API team names → our abbr
 const ODDS_NAME_MAP = {
   'Mexico':'MEX','South Africa':'RSA','Korea Republic':'KOR','South Korea':'KOR','Czechia':'CZE','Czech Republic':'CZE',
-  'Canada':'CAN','Bosnia and Herzegovina':'BIH','USA':'USA','United States':'USA','Paraguay':'PAR',
+  'Canada':'CAN','Bosnia and Herzegovina':'BIH','Bosnia & Herzegovina':'BIH','Bosnia-Herzegovina':'BIH','USA':'USA','United States':'USA','Paraguay':'PAR',
   'Qatar':'QAT','Switzerland':'SUI','Brazil':'BRA','Morocco':'MAR','Haiti':'HTI','Scotland':'SCO',
   'Australia':'AUS','Turkey':'TUR','Turkiye':'TUR','Germany':'GER',"Cote d'Ivoire":'CIV',"Côte d'Ivoire":'CIV','Ivory Coast':'CIV',
   'Ecuador':'ECU','Curacao':'CUW','Curaçao':'CUW','Netherlands':'NED','Japan':'JPN','Tunisia':'TUN','Sweden':'SWE',
@@ -767,11 +767,11 @@ function deltaArrow(prior, posterior) {
   return `<span class="delta delta-eq">≈</span>`;
 }
 
-function oddsCellHtml(g, profiles) {
+// 賠率＋貝葉斯的「內層」HTML（不含 <td> 外框），供獨立欄位與「比分＋賠率」合併欄共用
+function oddsInnerHtml(g, profiles) {
   const odds = getOddsForGame(g);
-
   if (!odds) {
-    return `<td class="odds-cell" style="color:var(--text3);font-size:12px">${t('oddsLoading')}</td>`;
+    return `<div style="color:var(--text3);font-size:12px">${t('oddsLoading')}</div>`;
   }
 
   const prior = oddsToProb(odds.home, odds.draw, odds.away);
@@ -779,7 +779,7 @@ function oddsCellHtml(g, profiles) {
   const t_prior = prior.ph + prior.pd + prior.pa;
   const t_bayes = bayes.bh + bayes.bd + bayes.ba;
 
-  return `<td class="odds-cell">
+  return `
     <div class="raw-odds">
       <span class="odds-pill">${t('oH')} <span>${odds.home}</span></span>
       <span class="odds-pill">${t('oD')} <span>${odds.draw}</span></span>
@@ -811,7 +811,19 @@ function oddsCellHtml(g, profiles) {
       <span class="pct-bh">${bayes.bh}%${deltaArrow(prior.ph,bayes.bh)}</span>
       <span class="pct-bd">${bayes.bd}%</span>
       <span class="pct-ba">${bayes.ba}%${deltaArrow(prior.pa,bayes.ba)}</span>
-    </div>
+    </div>`;
+}
+
+// 獨立的賠率欄位（即將開賽分頁用）
+function oddsCellHtml(g, profiles) {
+  return `<td class="odds-cell">${oddsInnerHtml(g, profiles)}</td>`;
+}
+
+// 比分＋賠率／貝葉斯合併欄（今日賽事分頁，已開賽場次用）
+function scoreOddsCellHtml(g, profiles) {
+  return `<td class="odds-cell" style="text-align:center">
+    <div style="margin-bottom:8px">${scoreHtml(g)}</div>
+    <div style="text-align:left">${oddsInnerHtml(g, profiles)}</div>
   </td>`;
 }
 
@@ -896,13 +908,13 @@ function renderToday(games, profiles) {
     const tr = document.createElement('tr');
     if (g.s==='live'||g.s==='inprogress') tr.style.background='rgba(220,38,38,0.04)';
 
-    // Scheduled → full odds+bayes cell (same as upcoming tab)
-    // Final/Live → score cell
+    // Scheduled → 純賠率+貝葉斯欄
+    // Final/Live → 比分 + 賠率+貝葉斯（保留盤口供對照）
     let midCell;
     if (g.s === 'scheduled') {
       midCell = oddsCellHtml(g, profiles);
     } else {
-      midCell = `<td style="text-align:center">${scoreHtml(g)}</td>`;
+      midCell = scoreOddsCellHtml(g, profiles);
     }
 
     tr.innerHTML = `
