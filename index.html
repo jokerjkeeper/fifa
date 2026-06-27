@@ -452,6 +452,32 @@ const ODDS_NAME_MAP = {
   'England':'ENG','Croatia':'CRO','Ghana':'GHA','Panama':'PAN'
 };
 
+// 隊名正規化：去變音符號(é→e, ç→c)、標點、空白與大小寫差異，
+// 讓 The Odds API 的各種拼法（Türkiye / Cote d'Ivoire / Cabo Verde…）都能對上本地縮寫。
+function normTeamKey(name) {
+  return (name || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // 去變音符
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');                        // 去標點/空白
+}
+// 由 ODDS_NAME_MAP 預建「正規化鍵 → 縮寫」表（額外補幾個正規化也對不上的別名）
+const ODDS_NAME_MAP_NORM = Object.fromEntries([
+  ...Object.entries(ODDS_NAME_MAP).map(([k, v]) => [normTeamKey(k), v]),
+  ['caboverde', 'CPV'], ['korearep', 'KOR'], ['drcongo', 'COD'], ['congodr', 'COD'],
+]);
+const _unresolvedTeamNames = new Set();
+// 解析 API 隊名 → 本地縮寫：先精確比對，失敗退回正規化比對；仍失敗則記錄一次警告（不再靜默丟棄）
+function resolveTeamAbbr(name) {
+  if (name == null) return undefined;
+  if (ODDS_NAME_MAP[name]) return ODDS_NAME_MAP[name];
+  const hit = ODDS_NAME_MAP_NORM[normTeamKey(name)];
+  if (!hit && !_unresolvedTeamNames.has(name)) {
+    _unresolvedTeamNames.add(name);
+    console.warn('[odds] 未對應的隊名（已略過，請補進 ODDS_NAME_MAP）:', name);
+  }
+  return hit;
+}
+
 // ══════════════════════════════════════════════════════
 // ALL HISTORICAL + UPCOMING GAMES
 // ══════════════════════════════════════════════════════
@@ -677,8 +703,8 @@ async function fetchOdds() {
 
     liveOdds = {};
     data.forEach(event => {
-      const homeAbbr = ODDS_NAME_MAP[event.home_team];
-      const awayAbbr = ODDS_NAME_MAP[event.away_team];
+      const homeAbbr = resolveTeamAbbr(event.home_team);
+      const awayAbbr = resolveTeamAbbr(event.away_team);
       if (!homeAbbr || !awayAbbr) return;
 
       // Pick first bookmaker that has all 3 outcomes
@@ -686,8 +712,8 @@ async function fetchOdds() {
         const h2h = bm.markets?.find(m => m.key === 'h2h');
         if (!h2h) continue;
         const outcomes = h2h.outcomes;
-        const homeO = outcomes.find(o => ODDS_NAME_MAP[o.name] === homeAbbr || o.name === event.home_team);
-        const awayO = outcomes.find(o => ODDS_NAME_MAP[o.name] === awayAbbr || o.name === event.away_team);
+        const homeO = outcomes.find(o => resolveTeamAbbr(o.name) === homeAbbr || o.name === event.home_team);
+        const awayO = outcomes.find(o => resolveTeamAbbr(o.name) === awayAbbr || o.name === event.away_team);
         const drawO = outcomes.find(o => o.name === 'Draw');
         if (homeO && awayO && drawO) {
           liveOdds[`${homeAbbr}-${awayAbbr}`] = {
@@ -736,12 +762,12 @@ async function fetchScores() {
       // 把回傳的比分整理成 { 隊伍縮寫: 進球數 }
       const byAbbr = {};
       event.scores.forEach(s => {
-        const abbr = ODDS_NAME_MAP[s.name];
+        const abbr = resolveTeamAbbr(s.name);
         if (abbr != null && s.score != null) byAbbr[abbr] = parseInt(s.score, 10);
       });
 
-      const ha = ODDS_NAME_MAP[event.home_team];
-      const aa = ODDS_NAME_MAP[event.away_team];
+      const ha = resolveTeamAbbr(event.home_team);
+      const aa = resolveTeamAbbr(event.away_team);
       if (!ha || !aa) return;
 
       // 依「隊伍身分」配對，避免 API 主客方向與本地資料相反時出錯
