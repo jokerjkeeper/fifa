@@ -1,6 +1,6 @@
 # Session 進度記錄
-## 狀態: 進行中（賠率底座已建好，待回測）
-## 最後更新: 2026-06-27 17:15
+## 狀態: 進行中（回測完成，證實需換引擎 #172）
+## 最後更新: 2026-06-27 17:40
 ## 當前分支: main
 
 ### 當前任務
@@ -27,8 +27,8 @@
 
 ### 待辦
 - [x] #173 修 leakage：buildTeamProfiles(cutoffTs) 只納入開賽前 final；各 html helper 以 kickoffTs(g) 為 cutoff 自建 profiles（不再共用全域）。node 驗證：建檔場數隨時序遞增(0→37)，upcoming 納入全部 38
-- [ ] #171 Brier/log-loss 回測（裸賠率 vs 貝葉斯）— 資料+leakage 都就緒，可開做
-- [ ] #172 用 Poisson/Dixon-Coles 取代 perfFactor
+- [x] #171 Brier/log-loss 回測完成。結果：裸賠率 Brier 0.560 / log 0.919 / 命中 63.2%；貝葉斯 0.578 / 0.929 / 57.9% → **三項全變差**。perfFactor 啟發式無校準價值。做成歷史頁頂常駐卡片 computeBacktest()/renderBacktest()
+- [ ] #172 用 Poisson/Dixon-Coles 取代 perfFactor — **回測必須勝過 0.560/0.919 基準線**才有價值，否則直接信賠率
 - [ ] 6/24–6/25 的 scheduled 場次目前仍用 FALLBACK_ODDS（10 場），未來開賽後可補真實賠率
 - [ ] ph/pd/pa 在有 odds 後僅供「爆冷歸因」(line 528-530) 使用；未來換掉啟發式引擎時一併清理
 - [ ] （承上 session）Odds API Key 明文暴露、32 強淘汰賽分頁、localStorage cache、隊名正規化
