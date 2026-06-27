@@ -32,8 +32,9 @@
 - [x] **（依 #172 結論的收尾）** UI 後驗欄改直接採用裸賠率：oddsInnerHtml/historyOddsHtml 移除 🧮 貝葉斯條，只留 📊 賠率 + 命中標記；表頭/info-box/footer 文案改寫；bayesUpdate/Elo 區塊加 DEPRECATED 註解（函式保留供回測卡片）。三方回測卡片保留為科學記錄。瀏覽器目視通過
 - [ ] 6/24–6/25 的 scheduled 場次目前仍用 FALLBACK_ODDS（10 場），未來開賽後可補真實賠率
 - [ ] ph/pd/pa 在有 odds 後僅供「爆冷歸因」(line 528-530) 使用；未來換掉啟發式引擎時一併清理
-- [ ] （承上 session）Odds API Key 明文暴露、32 強淘汰賽分頁、localStorage cache、隊名正規化
-- [ ] 本次程式變更尚未 commit（用戶未要求）
+- [x] 隊名正規化：normTeamKey()+ODDS_NAME_MAP_NORM+resolveTeamAbbr()，API 拼法變體（Türkiye/Cabo Verde/印刷體撇號/變音符）不再被靜默丟棄，未對應改 console.warn。fetchOdds/fetchScores 7 處查找全改用。commit 1906339
+- [ ] 積欠：Odds API Key 明文暴露（需後端/代理，靜態站無法純前端解決，待用戶定架構）、32 強淘汰賽分頁（淘汰賽資料未出，過早）、localStorage cache（優化）
+- [x] #172 相關變更已 commit + push：82ccaa1 / 606a2d0（已 push 至 origin/main）；1906339（隊名正規化，**尚未 push**）
 
 ### 決策記錄
 | 日期 | 決策 | 原因 | 替代方案 |
