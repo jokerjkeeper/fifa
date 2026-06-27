@@ -204,11 +204,10 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
 <!-- UPCOMING -->
 <div class="panel active" id="panel-upcoming">
   <div class="info-box" data-i18n-html="info-box">
-    <strong>貝葉斯動態修正說明</strong>：
-    <strong style="color:var(--accent)">藍色</strong> = 外盤賠率隱含概率（先驗），
-    <strong style="color:#818cf8">紫色</strong> = 貝葉斯修正後概率（後驗）。
-    修正依據：同組已完成比賽的實際表現 vs 預期差異，進球數、爆冷記錄、防守表現均納入計算。
-    箭頭 <span style="color:var(--green)">↑</span> 表示修正後勝率上升，<span style="color:var(--red)">↓</span> 表示下降。
+    <strong>預測說明</strong>：
+    <strong style="color:var(--accent)">藍色</strong> = 外盤賠率去抽水後的隱含概率。
+    經回測驗證（見歷史頁回測卡片），市場盤口本身就是最佳預測器，
+    自製的貝葉斯/Elo-Poisson 修正反而降低準度，故直接採用賠率機率。
   </div>
   <div class="filter-row">
     <span class="filter-label" data-i18n="f-group">組別：</span>
@@ -229,7 +228,7 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
   <div class="table-wrap"><table>
     <thead><tr>
       <th data-i18n="th-date">日期</th><th data-i18n="th-time">時間(台)</th><th data-i18n="th-group">組別</th>
-      <th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-odds">賠率概率 → 貝葉斯修正</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-status">狀態</th>
+      <th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-odds">賠率隱含概率</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-status">狀態</th>
     </tr></thead>
     <tbody id="tbody-upcoming"></tbody>
   </table></div>
@@ -238,7 +237,7 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
 <!-- TODAY -->
 <div class="panel" id="panel-today">
   <div class="table-wrap"><table>
-    <thead><tr><th data-i18n="th-time">時間(台)</th><th data-i18n="th-group">組別</th><th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-score-odds">比分 / 賠率概率 → 貝葉斯修正</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-status">狀態</th></tr></thead>
+    <thead><tr><th data-i18n="th-time">時間(台)</th><th data-i18n="th-group">組別</th><th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-score-odds">比分 / 賠率隱含概率</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-status">狀態</th></tr></thead>
     <tbody id="tbody-today"></tbody>
   </table></div>
 </div>
@@ -256,14 +255,14 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
   <div class="table-wrap"><table>
     <thead><tr>
       <th data-i18n="th-date">日期</th><th data-i18n="th-time">時間(台)</th><th data-i18n="th-group">組別</th>
-      <th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-score">比分</th><th class="c" data-i18n="th-pred">賽前先驗 → 貝葉斯</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-tag">標記</th>
+      <th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-score">比分</th><th class="c" data-i18n="th-pred">賽前賠率預測 vs 結果</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-tag">標記</th>
     </tr></thead>
     <tbody id="tbody-history"></tbody>
   </table></div>
 </div>
 
 <div class="footer">
-  <span data-i18n="footer">賠率來源：The Odds API（外盤歐賠）· 台灣時間 · 貝葉斯修正：依本屆小組賽實際表現動態更新</span>
+  <span data-i18n="footer">賠率來源：The Odds API（外盤歐賠）／歷史 OddsPortal 收盤 · 台灣時間 · 預測採賠率隱含機率（回測證實優於自製修正）</span>
   <span id="footer-time"></span>
 </div>
 
@@ -299,8 +298,8 @@ const I18N = {
   'tab-today':    { zh:'今日賽事', en:'Today' },
   'tab-history':  { zh:'歷史紀錄', en:'History' },
   'info-box': {
-    zh:'<strong>貝葉斯動態修正說明</strong>：<strong style="color:var(--accent)">藍色</strong> = 外盤賠率隱含概率（先驗），<strong style="color:#818cf8">紫色</strong> = 貝葉斯修正後概率（後驗）。修正依據：同組已完成比賽的實際表現 vs 預期差異，進球數、爆冷記錄、防守表現均納入計算。箭頭 <span style="color:var(--green)">↑</span> 表示修正後勝率上升，<span style="color:var(--red)">↓</span> 表示下降。',
-    en:'<strong>Bayesian dynamic adjustment</strong>: <strong style="color:var(--accent)">Blue</strong> = bookmaker odds-implied probability (prior), <strong style="color:#818cf8">Purple</strong> = Bayesian-adjusted probability (posterior). Adjusted from actual vs expected performance of completed group matches — goals, upsets and defensive record are all factored in. Arrow <span style="color:var(--green)">↑</span> = win probability rose after adjustment, <span style="color:var(--red)">↓</span> = fell.'
+    zh:'<strong>預測說明</strong>：<strong style="color:var(--accent)">藍色</strong> = 外盤賠率去抽水後的隱含概率。經回測驗證（見歷史頁回測卡片），市場盤口本身就是最佳預測器，自製的貝葉斯/Elo-Poisson 修正反而降低準度，故直接採用賠率機率。',
+    en:'<strong>Prediction note</strong>: <strong style="color:var(--accent)">Blue</strong> = bookmaker odds-implied probability (vig removed). Backtesting (see the card on the History tab) shows the market odds are the best predictor on their own — our home-grown Bayesian/Elo-Poisson adjustments hurt accuracy — so we use the odds probabilities directly.'
   },
   'f-group':  { zh:'組別：', en:'Group:' },
   'f-filter': { zh:'篩選：', en:'Filter:' },
@@ -316,10 +315,10 @@ const I18N = {
   'th-status':{ zh:'狀態', en:'Status' },
   'th-score': { zh:'比分', en:'Score' },
   'th-tag':   { zh:'標記', en:'Tags' },
-  'th-odds':  { zh:'賠率概率 → 貝葉斯修正', en:'Odds prob. → Bayesian' },
-  'th-score-odds': { zh:'比分 / 賠率概率 → 貝葉斯修正', en:'Score / Odds prob. → Bayesian' },
-  'th-pred':  { zh:'賽前先驗 → 貝葉斯', en:'Pre-match prior → Bayes' },
-  footer:     { zh:'賠率來源：The Odds API（外盤歐賠）· 台灣時間 · 貝葉斯修正：依本屆小組賽實際表現動態更新', en:'Odds: The Odds API (EU decimal) · Taiwan time · Bayesian adjustment from this tournament’s group-stage form' },
+  'th-odds':  { zh:'賠率隱含概率', en:'Odds-implied prob.' },
+  'th-score-odds': { zh:'比分 / 賠率隱含概率', en:'Score / Odds-implied prob.' },
+  'th-pred':  { zh:'賽前賠率預測 vs 結果', en:'Pre-match odds vs result' },
+  footer:     { zh:'賠率來源：The Odds API（外盤歐賠）／歷史 OddsPortal 收盤 · 台灣時間 · 預測採賠率隱含機率（回測證實優於自製修正）', en:'Odds: The Odds API (EU decimal) / OddsPortal closing (historical) · Taiwan time · Predictions use odds-implied probability (backtested to beat home-grown adjustments)' },
   // dynamic
   groupStage: { zh:'小組賽', en:'Group' },
   bLive:      { zh:'⚡ 直播中', en:'⚡ Live' },
@@ -550,7 +549,9 @@ function buildTeamProfiles(cutoffTs = Infinity) {
   return profiles;
 }
 
-// ── #172 Elo→λ→Poisson 模型（取代 perfFactor 啟發式的候選引擎）──────────
+// ── #172 Elo→λ→Poisson 模型 ─────────────────────────────────────────────
+// ⚠️ DEPRECATED 作為「正式預測引擎」：回測證實此模型敗給裸賠率（0.586 vs 0.560），
+//    UI 已不採用其輸出。以下函式僅保留供歷史頁「三方回測卡片」作科學對照記錄。
 // 參數為對 38 場 final 全樣本網格搜尋的最佳值（best-effort），詳見
 // docs/fifa2026_prediction_methods.md 第六章。注意：全樣本選參有輕度過擬合。
 const ELO_K = 40;      // 學習率（含進球差加成）
@@ -616,6 +617,8 @@ function oddsToProb(home, draw, away) {
 }
 
 // Bayesian update: given prior probs and team performance
+// ⚠️ DEPRECATED 作為「正式預測引擎」：#171 回測證實 perfFactor 啟發式讓三項指標全部變差
+//    （加噪而非校準），UI 已不採用其輸出。僅保留供歷史頁「三方回測卡片」作科學對照記錄。
 function bayesUpdate(prior_h, prior_d, prior_a, teamH, teamA, profiles) {
   const ph = profiles[teamH] || {games:0,wins:0,draws:0,losses:0,goals_for:0,goals_against:0,upsets_caused:0,upset_suffered:0};
   const pa = profiles[teamA] || {games:0,wins:0,draws:0,losses:0,goals_for:0,goals_against:0,upsets_caused:0,upset_suffered:0};
@@ -850,12 +853,10 @@ function oddsInnerHtml(g) {
     return `<div style="color:var(--text3);font-size:12px">${t('oddsLoading')}</div>`;
   }
 
-  // 僅用該場開賽前的場次建檔（避免 leakage）；upcoming 場次的 cutoff 在未來，等於納入全部已完賽 final
-  const profiles = buildTeamProfiles(kickoffTs(g));
+  // #172 結論：回測證實裸賠率即最佳預測器，自製後驗層（perfFactor/Elo-Poisson）反而加噪，
+  // 故 UI 直接採用賠率隱含機率；貝葉斯/模型僅保留於歷史頁回測卡片作科學記錄。
   const prior = oddsToProb(odds.home, odds.draw, odds.away);
-  const bayes = bayesUpdate(prior.ph, prior.pd, prior.pa, g.h, g.a, profiles);
   const t_prior = prior.ph + prior.pd + prior.pa;
-  const t_bayes = bayes.bh + bayes.bd + bayes.ba;
 
   return `
     <div class="raw-odds">
@@ -876,19 +877,6 @@ function oddsInnerHtml(g) {
       <span class="pct-h">${prior.ph}%</span>
       <span class="pct-d">${prior.pd}%</span>
       <span class="pct-a">${prior.pa}%</span>
-    </div>
-    <div class="bayes-row" style="margin-top:6px">
-      <span class="odds-label" style="color:#818cf8;font-size:10px">🧮 ${t('oBayes')}</span>
-      <div class="bayes-bar-wrap">
-        <div class="bb-h" style="width:${bayes.bh/t_bayes*100}%"></div>
-        <div class="bb-d" style="width:${bayes.bd/t_bayes*100}%"></div>
-        <div class="bb-a" style="width:${bayes.ba/t_bayes*100}%"></div>
-      </div>
-    </div>
-    <div class="bayes-pcts">
-      <span class="pct-bh">${bayes.bh}%${deltaArrow(prior.ph,bayes.bh)}</span>
-      <span class="pct-bd">${bayes.bd}%</span>
-      <span class="pct-ba">${bayes.ba}%${deltaArrow(prior.pa,bayes.ba)}</span>
     </div>`;
 }
 
@@ -905,9 +893,8 @@ function scoreOddsCellHtml(g) {
   </td>`;
 }
 
-// 歷史頁專用：顯示「賽前先驗 → 貝葉斯後驗」並標記是否命中實際結果。
-// 目前只有帶 ph/pd/pa 先驗快照的場次能顯示；其餘場次因未記錄賽前賠率而留白，
-// 這也是後續「回測驗證」必須先補齊的資料底座（見 docs/fifa2026_prediction_methods.md）。
+// 歷史頁專用：顯示「賽前賠率隱含機率」並標記是否命中實際結果（#172 後不再顯示貝葉斯後驗）。
+// 先驗來源：已記錄的賽前賠率(odds) → 舊 ph/pd/pa 快照；皆無則留白。
 function historyOddsHtml(g) {
   // 先驗來源優先序：已記錄的賽前賠率(odds) → 舊有的 ph/pd/pa 快照 → 無
   const odds = getOddsForGame(g);
@@ -915,11 +902,8 @@ function historyOddsHtml(g) {
   if (odds) prior = oddsToProb(odds.home, odds.draw, odds.away);
   else if (g.ph != null) prior = { ph:g.ph, pd:g.pd, pa:g.pa };
   else return `<span style="color:var(--text3);font-size:11px">${t('oddsUnrec')}</span>`;
-  // 僅用該場開賽前的場次建檔（避免 leakage）
-  const profiles = buildTeamProfiles(kickoffTs(g));
-  const bayes = bayesUpdate(prior.ph, prior.pd, prior.pa, g.h, g.a, profiles);
+  // #172 結論：直接以賠率隱含機率為預測（貝葉斯/模型僅保留於回測卡片）
   const tp = prior.ph + prior.pd + prior.pa;
-  const tb = bayes.bh + bayes.bd + bayes.ba;
 
   // 實際結果與「先驗最高分」的預測是否一致
   const actual = g.hs > g.as ? 'h' : g.hs < g.as ? 'a' : 'd';
@@ -946,19 +930,6 @@ function historyOddsHtml(g) {
         <span class="pct-h" style="${mk('h')}">${prior.ph}%</span>
         <span class="pct-d" style="${mk('d')}">${prior.pd}%</span>
         <span class="pct-a" style="${mk('a')}">${prior.pa}%</span>
-      </div>
-      <div class="bayes-row" style="margin-top:6px">
-        <span class="odds-label" style="color:#818cf8;font-size:10px">🧮 ${t('oBayes')}</span>
-        <div class="bayes-bar-wrap">
-          <div class="bb-h" style="width:${bayes.bh/tb*100}%"></div>
-          <div class="bb-d" style="width:${bayes.bd/tb*100}%"></div>
-          <div class="bb-a" style="width:${bayes.ba/tb*100}%"></div>
-        </div>
-      </div>
-      <div class="bayes-pcts">
-        <span class="pct-bh" style="${mk('h')}">${bayes.bh}%${deltaArrow(prior.ph,bayes.bh)}</span>
-        <span class="pct-bd" style="${mk('d')}">${bayes.bd}%</span>
-        <span class="pct-ba" style="${mk('a')}">${bayes.ba}%${deltaArrow(prior.pa,bayes.ba)}</span>
       </div>
       <div style="margin-top:4px;text-align:center">${hitBadge}</div>
     </div>`;

@@ -29,7 +29,7 @@
 - [x] #173 修 leakage：buildTeamProfiles(cutoffTs) 只納入開賽前 final；各 html helper 以 kickoffTs(g) 為 cutoff 自建 profiles（不再共用全域）。node 驗證：建檔場數隨時序遞增(0→37)，upcoming 納入全部 38
 - [x] #171 Brier/log-loss 回測完成。結果：裸賠率 Brier 0.560 / log 0.919 / 命中 63.2%；貝葉斯 0.578 / 0.929 / 57.9% → **三項全變差**。perfFactor 啟發式無校準價值。做成歷史頁頂常駐卡片 computeBacktest()/renderBacktest()
 - [x] #172 Elo→λ→Poisson 模型完成。實作 buildEloRatings/eloToLambda/poissonMatrix/modelProbForGame（walk-forward 無洩漏）；回測卡片擴成三方對比（裸賠率/貝葉斯/Poisson 模型）+ i18n(btCol3/btModelBetter/btModelWorse)。**結果（靜態 38 場）：模型 0.586/0.976/52.6%，即使全樣本選參仍三項全敗，輸給裸賠率 0.560**。根因：每隊僅 3 場 + Elo 1500 冷啟動，盤口已含全球資訊。雙軌交叉驗證一致、瀏覽器目視通過。文檔補第六章
-- [ ] **（依 #172 結論的收尾）** UI 後驗欄改直接採用裸賠率，bayesUpdate/perfFactor/Elo-Poisson 標記 deprecated（保留三方回測卡片當科學記錄）— 尚未做
+- [x] **（依 #172 結論的收尾）** UI 後驗欄改直接採用裸賠率：oddsInnerHtml/historyOddsHtml 移除 🧮 貝葉斯條，只留 📊 賠率 + 命中標記；表頭/info-box/footer 文案改寫；bayesUpdate/Elo 區塊加 DEPRECATED 註解（函式保留供回測卡片）。三方回測卡片保留為科學記錄。瀏覽器目視通過
 - [ ] 6/24–6/25 的 scheduled 場次目前仍用 FALLBACK_ODDS（10 場），未來開賽後可補真實賠率
 - [ ] ph/pd/pa 在有 odds 後僅供「爆冷歸因」(line 528-530) 使用；未來換掉啟發式引擎時一併清理
 - [ ] （承上 session）Odds API Key 明文暴露、32 強淘汰賽分頁、localStorage cache、隊名正規化
