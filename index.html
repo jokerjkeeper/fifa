@@ -273,6 +273,31 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
 const ODDS_API_KEY = '023ee379fbdbea2274371b447449b272';
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
 
+// ── localStorage 快取：省 Odds API 額度、加速初次載入、離線可用 ──────────
+const CACHE_PREFIX = 'fifa-cache-v1:';
+const ODDS_TTL_MS   = 30 * 60 * 1000; // 賠率：賽前變動慢，30 分鐘內用快取
+const SCORES_TTL_MS = 5  * 60 * 1000; // 比分：直播時較快，5 分鐘內用快取
+// 帶快取的 JSON 抓取。force=true 強制重抓（手動「更新」用）；
+// 網路失敗時退回過期快取（離線可用）。回傳 { data, source:'live'|'cache'|'stale' }
+async function cachedFetchJson(name, url, ttlMs, force) {
+  const key = CACHE_PREFIX + name;
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { cached = null; }
+  if (!force && cached && (Date.now() - cached.ts) < ttlMs) {
+    return { data: cached.data, source: 'cache' };
+  }
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch (e) {} // 配額/隱私模式忽略
+    return { data, source: 'live' };
+  } catch (e) {
+    if (cached) return { data: cached.data, source: 'stale' }; // 離線退回舊快取
+    throw e;
+  }
+}
+
 // ══════════════════════════════════════════════════════
 // I18N — 繁體中文 / English
 // ══════════════════════════════════════════════════════
@@ -347,6 +372,8 @@ const I18N = {
   scoreFetching:{ zh:'⏳ 拉取即時比分…', en:'⏳ Fetching scores…' },
   scoreOk:    { zh:n=>`✓ 即時比分已更新 (${n} 場)`, en:n=>`✓ Scores updated (${n})` },
   scoreErr:   { zh:'⚠ 比分離線（使用既有數據）', en:'⚠ Scores offline (using cached)' },
+  cacheTag:   { zh:'快取', en:'cached' },
+  staleTag:   { zh:'離線快取', en:'offline cache' },
   btTitle:    { zh:'📐 回測驗證：裸賠率 vs 貝葉斯 vs Elo-Poisson 模型', en:'📐 Backtest: naked odds vs Bayesian vs Elo-Poisson' },
   btN:        { zh:n=>`樣本 ${n} 場 · walk-forward 無資料洩漏`, en:n=>`${n} matches · walk-forward, leakage-free` },
   btCol1:     { zh:'裸賠率', en:'Naked odds' },
@@ -690,16 +717,13 @@ function bayesUpdate(prior_h, prior_d, prior_a, teamH, teamA, profiles) {
 let liveOdds = {}; // key: "H-A" → {home_odds, draw_odds, away_odds, bookmaker}
 let oddsLoaded = false;
 
-async function fetchOdds() {
+async function fetchOdds(force = false) {
   try {
     document.getElementById('odds-status').textContent = t('oddsFetching');
     document.getElementById('odds-status').className = 'odds-status odds-loading';
 
     const url = `${ODDS_API_BASE}/sports/soccer_fifa_world_cup/odds/?apiKey=${ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal`;
-    const res = await fetch(url);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const { data, source } = await cachedFetchJson('odds', url, ODDS_TTL_MS, force);
 
     liveOdds = {};
     data.forEach(event => {
@@ -727,7 +751,8 @@ async function fetchOdds() {
 
     const count = Object.keys(liveOdds).length;
     oddsLoaded = true;
-    document.getElementById('odds-status').textContent = t('oddsOk', count);
+    const tag = source === 'cache' ? ` · ${t('cacheTag')}` : source === 'stale' ? ` · ${t('staleTag')}` : '';
+    document.getElementById('odds-status').textContent = t('oddsOk', count) + tag;
     document.getElementById('odds-status').className = 'odds-status odds-ok';
     return true;
   } catch(e) {
@@ -742,7 +767,7 @@ async function fetchOdds() {
 // ══════════════════════════════════════════════════════
 // 抓取近 3 日內的真實比分，回寫到 ALL_GAMES。
 // 同一把 key、同一個 sport_key，瀏覽器可直接 fetch（CORS 已驗證）。
-async function fetchScores() {
+async function fetchScores(force = false) {
   const el = document.getElementById('score-status');
   try {
     el.textContent = t('scoreFetching');
@@ -750,9 +775,7 @@ async function fetchScores() {
 
     // daysFrom 可選 1~3：回傳「現在起 + 過去 N 天內開賽」的賽事（含直播/已完賽）
     const url = `${ODDS_API_BASE}/sports/soccer_fifa_world_cup/scores/?apiKey=${ODDS_API_KEY}&daysFrom=3`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const { data, source } = await cachedFetchJson('scores', url, SCORES_TTL_MS, force);
 
     let updated = 0;
     data.forEach(event => {
@@ -783,7 +806,8 @@ async function fetchScores() {
       updated++;
     });
 
-    el.textContent = t('scoreOk', updated);
+    const tag = source === 'cache' ? ` · ${t('cacheTag')}` : source === 'stale' ? ` · ${t('staleTag')}` : '';
+    el.textContent = t('scoreOk', updated) + tag;
     el.className = 'odds-status odds-ok';
     return true;
   } catch(e) {
@@ -1173,7 +1197,8 @@ async function loadData() {
   const icon = document.getElementById('refresh-icon');
   btn.disabled = true; icon.classList.add('spinning');
 
-  await Promise.all([fetchOdds(), fetchScores()]);
+  // 手動「更新」強制略過快取，抓最新
+  await Promise.all([fetchOdds(true), fetchScores(true)]);
   renderAll();
   stampTime();
   btn.disabled = false; icon.classList.remove('spinning');

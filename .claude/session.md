@@ -33,7 +33,8 @@
 - [ ] 6/24–6/25 的 scheduled 場次目前仍用 FALLBACK_ODDS（10 場），未來開賽後可補真實賠率
 - [ ] ph/pd/pa 在有 odds 後僅供「爆冷歸因」(line 528-530) 使用；未來換掉啟發式引擎時一併清理
 - [x] 隊名正規化：normTeamKey()+ODDS_NAME_MAP_NORM+resolveTeamAbbr()，API 拼法變體（Türkiye/Cabo Verde/印刷體撇號/變音符）不再被靜默丟棄，未對應改 console.warn。fetchOdds/fetchScores 7 處查找全改用。commit 1906339
-- [ ] 積欠：Odds API Key 明文暴露（需後端/代理，靜態站無法純前端解決，待用戶定架構）、32 強淘汰賽分頁（淘汰賽資料未出，過早）、localStorage cache（優化）
+- [x] localStorage cache：cachedFetchJson(name,url,ttl,force)，賠率 TTL 30 分/比分 5 分；命中新鮮快取不打 API、網路失敗退回過期快取（離線可用）、狀態列標「· 快取/離線快取」；手動「更新」鈕 force 略過快取。瀏覽器三情境驗證通過
+- [ ] 積欠：Odds API Key 明文暴露（需後端/代理，靜態站無法純前端解決，待用戶定架構）、32 強淘汰賽分頁（淘汰賽資料未出，過早）
 - [x] #172 相關變更已 commit + push：82ccaa1 / 606a2d0（已 push 至 origin/main）；1906339（隊名正規化，**尚未 push**）
 
 ### 決策記錄
