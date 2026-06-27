@@ -498,8 +498,12 @@ const ALL_GAMES = [
 // BAYESIAN ENGINE
 // ══════════════════════════════════════════════════════
 
-// Build performance profile per team from completed matches
-function buildTeamProfiles() {
+// 取得某場開賽時間戳（ms）
+function kickoffTs(g) { return new Date(g.t + ':00').getTime(); }
+
+// Build performance profile per team from completed matches.
+// cutoffTs：僅納入「開賽時間早於 cutoffTs」的 final，避免用當場或未來結果回頭預測（資訊洩漏 leakage）。
+function buildTeamProfiles(cutoffTs = Infinity) {
   const profiles = {};
   const initProfile = () => ({
     games:0, goals_for:0, goals_against:0,
@@ -508,7 +512,7 @@ function buildTeamProfiles() {
     expected_wins:0  // sum of win probabilities when they were favourite
   });
 
-  ALL_GAMES.filter(g => g.s === 'final').forEach(g => {
+  ALL_GAMES.filter(g => g.s === 'final' && kickoffTs(g) < cutoffTs).forEach(g => {
     if (!profiles[g.h]) profiles[g.h] = initProfile();
     if (!profiles[g.a]) profiles[g.a] = initProfile();
 
@@ -770,12 +774,14 @@ function deltaArrow(prior, posterior) {
 }
 
 // 賠率＋貝葉斯的「內層」HTML（不含 <td> 外框），供獨立欄位與「比分＋賠率」合併欄共用
-function oddsInnerHtml(g, profiles) {
+function oddsInnerHtml(g) {
   const odds = getOddsForGame(g);
   if (!odds) {
     return `<div style="color:var(--text3);font-size:12px">${t('oddsLoading')}</div>`;
   }
 
+  // 僅用該場開賽前的場次建檔（避免 leakage）；upcoming 場次的 cutoff 在未來，等於納入全部已完賽 final
+  const profiles = buildTeamProfiles(kickoffTs(g));
   const prior = oddsToProb(odds.home, odds.draw, odds.away);
   const bayes = bayesUpdate(prior.ph, prior.pd, prior.pa, g.h, g.a, profiles);
   const t_prior = prior.ph + prior.pd + prior.pa;
@@ -817,28 +823,30 @@ function oddsInnerHtml(g, profiles) {
 }
 
 // 獨立的賠率欄位（即將開賽分頁用）
-function oddsCellHtml(g, profiles) {
-  return `<td class="odds-cell">${oddsInnerHtml(g, profiles)}</td>`;
+function oddsCellHtml(g) {
+  return `<td class="odds-cell">${oddsInnerHtml(g)}</td>`;
 }
 
 // 比分＋賠率／貝葉斯合併欄（今日賽事分頁，已開賽場次用）
-function scoreOddsCellHtml(g, profiles) {
+function scoreOddsCellHtml(g) {
   return `<td class="odds-cell" style="text-align:center">
     <div style="margin-bottom:8px">${scoreHtml(g)}</div>
-    <div style="text-align:left">${oddsInnerHtml(g, profiles)}</div>
+    <div style="text-align:left">${oddsInnerHtml(g)}</div>
   </td>`;
 }
 
 // 歷史頁專用：顯示「賽前先驗 → 貝葉斯後驗」並標記是否命中實際結果。
 // 目前只有帶 ph/pd/pa 先驗快照的場次能顯示；其餘場次因未記錄賽前賠率而留白，
 // 這也是後續「回測驗證」必須先補齊的資料底座（見 docs/fifa2026_prediction_methods.md）。
-function historyOddsHtml(g, profiles) {
+function historyOddsHtml(g) {
   // 先驗來源優先序：已記錄的賽前賠率(odds) → 舊有的 ph/pd/pa 快照 → 無
   const odds = getOddsForGame(g);
   let prior;
   if (odds) prior = oddsToProb(odds.home, odds.draw, odds.away);
   else if (g.ph != null) prior = { ph:g.ph, pd:g.pd, pa:g.pa };
   else return `<span style="color:var(--text3);font-size:11px">${t('oddsUnrec')}</span>`;
+  // 僅用該場開賽前的場次建檔（避免 leakage）
+  const profiles = buildTeamProfiles(kickoffTs(g));
   const bayes = bayesUpdate(prior.ph, prior.pd, prior.pa, g.h, g.a, profiles);
   const tp = prior.ph + prior.pd + prior.pa;
   const tb = bayes.bh + bayes.bd + bayes.ba;
@@ -912,7 +920,6 @@ function addDateDiv(tbody, label, colspan=7) {
 // RENDER FUNCTIONS
 // ══════════════════════════════════════════════════════
 function renderAll() {
-  const profiles = buildTeamProfiles();
   const today = todayLabel();
   const history  = ALL_GAMES.filter(g => g.s === 'final');
   const upcoming = ALL_GAMES.filter(g => g.s === 'scheduled' || g.s === 'live' || g.s === 'inprogress');
@@ -926,12 +933,12 @@ function renderAll() {
   document.getElementById('cnt-today').textContent    = todayGames.length;
   document.getElementById('cnt-history').textContent  = history.length;
 
-  renderUpcoming(upcoming, profiles);
-  renderToday(todayGames, profiles);
-  renderHistory(history, profiles);
+  renderUpcoming(upcoming);
+  renderToday(todayGames);
+  renderHistory(history);
 }
 
-function renderUpcoming(games, profiles) {
+function renderUpcoming(games) {
   const tbody = document.getElementById('tbody-upcoming');
   const gf = chipState['ug'];
   const filtered = gf==='all' ? games : games.filter(g => GROUPMAP[g.h]===gf);
@@ -942,7 +949,7 @@ function renderUpcoming(games, profiles) {
     const t = fmtTW(g.t);
     if (t.date !== last) { last=t.date; addDateDiv(tbody, t.date); }
     const tr = document.createElement('tr');
-    const oddsHTML = oddsCellHtml(g, profiles);
+    const oddsHTML = oddsCellHtml(g);
     tr.innerHTML = `
       <td style="color:var(--text2);font-size:12px">${t.date}</td>
       <td style="color:var(--text2);font-size:12px">${t.time}</td>
@@ -955,7 +962,7 @@ function renderUpcoming(games, profiles) {
   });
 }
 
-function renderToday(games, profiles) {
+function renderToday(games) {
   const tbody = document.getElementById('tbody-today');
   tbody.innerHTML = '';
   if (!games.length) { tbody.innerHTML=`<tr class="empty"><td colspan="6">${t('emptyToday')}</td></tr>`; return; }
@@ -971,9 +978,9 @@ function renderToday(games, profiles) {
     // Final/Live → 比分 + 賠率+貝葉斯（保留盤口供對照）
     let midCell;
     if (g.s === 'scheduled') {
-      midCell = oddsCellHtml(g, profiles);
+      midCell = oddsCellHtml(g);
     } else {
-      midCell = scoreOddsCellHtml(g, profiles);
+      midCell = scoreOddsCellHtml(g);
     }
 
     tr.innerHTML = `
@@ -987,7 +994,7 @@ function renderToday(games, profiles) {
   });
 }
 
-function renderHistory(games, profiles) {
+function renderHistory(games) {
   const tbody = document.getElementById('tbody-history');
   const f = chipState['hf'];
   let filtered = [...games];
@@ -1009,7 +1016,7 @@ function renderHistory(games, profiles) {
       <td><span class="grp-tag">${groupTag(g.h)}</span></td>
       <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname${hw?' w':aw?' l':''}">${teamName(g.h)}</span></div></td>
       <td style="text-align:center">${scoreHtml(g)}</td>
-      <td class="odds-cell">${historyOddsHtml(g, profiles)}</td>
+      <td class="odds-cell">${historyOddsHtml(g)}</td>
       <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname${aw?' w':hw?' l':''}">${teamName(g.a)}</span></div></td>
       <td style="text-align:center">${tagHtml(g)}</td>`;
     tbody.appendChild(tr);

@@ -26,8 +26,8 @@
 - [x] node 語法驗證通過：48 場(38 final 全帶 odds + 10 scheduled)
 
 ### 待辦
-- [ ] #173 修 leakage（buildTeamProfiles 只用賽前場次）— 回測前必修，否則數字虛高
-- [ ] #171 Brier/log-loss 回測（裸賠率 vs 貝葉斯）— 資料已齊，可開做
+- [x] #173 修 leakage：buildTeamProfiles(cutoffTs) 只納入開賽前 final；各 html helper 以 kickoffTs(g) 為 cutoff 自建 profiles（不再共用全域）。node 驗證：建檔場數隨時序遞增(0→37)，upcoming 納入全部 38
+- [ ] #171 Brier/log-loss 回測（裸賠率 vs 貝葉斯）— 資料+leakage 都就緒，可開做
 - [ ] #172 用 Poisson/Dixon-Coles 取代 perfFactor
 - [ ] 6/24–6/25 的 scheduled 場次目前仍用 FALLBACK_ODDS（10 場），未來開賽後可補真實賠率
 - [ ] ph/pd/pa 在有 odds 後僅供「爆冷歸因」(line 528-530) 使用；未來換掉啟發式引擎時一併清理
