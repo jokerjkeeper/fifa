@@ -250,7 +250,7 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
   <div class="table-wrap"><table>
     <thead><tr>
       <th data-i18n="th-date">日期</th><th data-i18n="th-time">時間(台)</th><th data-i18n="th-group">組別</th>
-      <th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-score">比分</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-tag">標記</th>
+      <th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-score">比分</th><th class="c" data-i18n="th-pred">賽前先驗 → 貝葉斯</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-tag">標記</th>
     </tr></thead>
     <tbody id="tbody-history"></tbody>
   </table></div>
@@ -312,6 +312,7 @@ const I18N = {
   'th-tag':   { zh:'標記', en:'Tags' },
   'th-odds':  { zh:'賠率概率 → 貝葉斯修正', en:'Odds prob. → Bayesian' },
   'th-score-odds': { zh:'比分 / 賠率概率 → 貝葉斯修正', en:'Score / Odds prob. → Bayesian' },
+  'th-pred':  { zh:'賽前先驗 → 貝葉斯', en:'Pre-match prior → Bayes' },
   footer:     { zh:'賠率來源：The Odds API（外盤歐賠）· 台灣時間 · 貝葉斯修正：依本屆小組賽實際表現動態更新', en:'Odds: The Odds API (EU decimal) · Taiwan time · Bayesian adjustment from this tournament’s group-stage form' },
   // dynamic
   groupStage: { zh:'小組賽', en:'Group' },
@@ -327,6 +328,9 @@ const I18N = {
   oOdds:      { zh:'賠率', en:'Odds' },
   oBayes:     { zh:'貝葉斯', en:'Bayes' },
   oddsLoading:{ zh:'— 賠率載入中', en:'— loading odds' },
+  oddsUnrec:  { zh:'賠率未記錄', en:'No odds recorded' },
+  predHit:    { zh:'命中', en:'hit' },
+  predMiss:   { zh:'未中', en:'miss' },
   emptyUpcoming:{ zh:'暫無符合條件的賽事', en:'No matches for this filter' },
   emptyToday: { zh:'今日暫無賽事', en:'No matches today' },
   emptyHistory:{ zh:'暫無符合條件的比賽', en:'No matches for this filter' },
@@ -706,6 +710,8 @@ const FALLBACK_ODDS = {
 
 function getOddsForGame(g) {
   const key = `${g.h}-${g.a}`;
+  // 已記錄的賽前賠率：final 場次的權威來源（由 ALL_GAMES 的 odds 欄位帶入）
+  if (g.odds) return { ...g.odds, bookmaker: g.odds.bookmaker || '賽前記錄' };
   return liveOdds[key] || FALLBACK_ODDS[key] || null;
 }
 
@@ -827,6 +833,63 @@ function scoreOddsCellHtml(g, profiles) {
   </td>`;
 }
 
+// 歷史頁專用：顯示「賽前先驗 → 貝葉斯後驗」並標記是否命中實際結果。
+// 目前只有帶 ph/pd/pa 先驗快照的場次能顯示；其餘場次因未記錄賽前賠率而留白，
+// 這也是後續「回測驗證」必須先補齊的資料底座（見 docs/fifa2026_prediction_methods.md）。
+function historyOddsHtml(g, profiles) {
+  // 先驗來源優先序：已記錄的賽前賠率(odds) → 舊有的 ph/pd/pa 快照 → 無
+  const odds = getOddsForGame(g);
+  let prior;
+  if (odds) prior = oddsToProb(odds.home, odds.draw, odds.away);
+  else if (g.ph != null) prior = { ph:g.ph, pd:g.pd, pa:g.pa };
+  else return `<span style="color:var(--text3);font-size:11px">${t('oddsUnrec')}</span>`;
+  const bayes = bayesUpdate(prior.ph, prior.pd, prior.pa, g.h, g.a, profiles);
+  const tp = prior.ph + prior.pd + prior.pa;
+  const tb = bayes.bh + bayes.bd + bayes.ba;
+
+  // 實際結果與「先驗最高分」的預測是否一致
+  const actual = g.hs > g.as ? 'h' : g.hs < g.as ? 'a' : 'd';
+  const pick = (prior.ph >= prior.pd && prior.ph >= prior.pa) ? 'h'
+             : (prior.pa >= prior.pd) ? 'a' : 'd';
+  const hit = pick === actual;
+  const hitBadge = hit
+    ? `<span class="delta delta-up">✓ ${t('predHit')}</span>`
+    : `<span class="delta delta-dn">✗ ${t('predMiss')}</span>`;
+  // 實際發生的結果加粗標示
+  const mk = o => actual === o ? 'font-weight:700;text-decoration:underline' : '';
+
+  return `
+    <div style="min-width:150px;text-align:left">
+      <div class="odds-row">
+        <span class="odds-label" style="color:var(--accent);font-size:10px">📊 ${t('oOdds')}</span>
+        <div class="odds-bar-wrap">
+          <div class="ob-h" style="width:${prior.ph/tp*100}%"></div>
+          <div class="ob-d" style="width:${prior.pd/tp*100}%"></div>
+          <div class="ob-a" style="width:${prior.pa/tp*100}%"></div>
+        </div>
+      </div>
+      <div class="odds-pcts">
+        <span class="pct-h" style="${mk('h')}">${prior.ph}%</span>
+        <span class="pct-d" style="${mk('d')}">${prior.pd}%</span>
+        <span class="pct-a" style="${mk('a')}">${prior.pa}%</span>
+      </div>
+      <div class="bayes-row" style="margin-top:6px">
+        <span class="odds-label" style="color:#818cf8;font-size:10px">🧮 ${t('oBayes')}</span>
+        <div class="bayes-bar-wrap">
+          <div class="bb-h" style="width:${bayes.bh/tb*100}%"></div>
+          <div class="bb-d" style="width:${bayes.bd/tb*100}%"></div>
+          <div class="bb-a" style="width:${bayes.ba/tb*100}%"></div>
+        </div>
+      </div>
+      <div class="bayes-pcts">
+        <span class="pct-bh" style="${mk('h')}">${bayes.bh}%${deltaArrow(prior.ph,bayes.bh)}</span>
+        <span class="pct-bd" style="${mk('d')}">${bayes.bd}%</span>
+        <span class="pct-ba" style="${mk('a')}">${bayes.ba}%${deltaArrow(prior.pa,bayes.ba)}</span>
+      </div>
+      <div style="margin-top:4px;text-align:center">${hitBadge}</div>
+    </div>`;
+}
+
 function badgeHtml(g) {
   const live = g.s==='live'||g.s==='inprogress';
   if (live) return `<span class="badge b-live">${t('bLive')}</span>`;
@@ -869,7 +932,7 @@ function renderAll() {
 
   renderUpcoming(upcoming, profiles);
   renderToday(todayGames, profiles);
-  renderHistory(history);
+  renderHistory(history, profiles);
 }
 
 function renderUpcoming(games, profiles) {
@@ -928,7 +991,7 @@ function renderToday(games, profiles) {
   });
 }
 
-function renderHistory(games) {
+function renderHistory(games, profiles) {
   const tbody = document.getElementById('tbody-history');
   const f = chipState['hf'];
   let filtered = [...games];
@@ -937,11 +1000,11 @@ function renderHistory(games) {
   else if (f==='draw') filtered = filtered.filter(g => g.hs===g.as);
   filtered.reverse();
   tbody.innerHTML = '';
-  if (!filtered.length) { tbody.innerHTML=`<tr class="empty"><td colspan="7">${t('emptyHistory')}</td></tr>`; return; }
+  if (!filtered.length) { tbody.innerHTML=`<tr class="empty"><td colspan="8">${t('emptyHistory')}</td></tr>`; return; }
   let last = '';
   filtered.forEach(g => {
     const t = fmtTW(g.t);
-    if (t.date !== last) { last=t.date; addDateDiv(tbody, t.date); }
+    if (t.date !== last) { last=t.date; addDateDiv(tbody, t.date, 8); }
     const hw=g.hs>g.as, aw=g.as>g.hs;
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -950,6 +1013,7 @@ function renderHistory(games) {
       <td><span class="grp-tag">${groupTag(g.h)}</span></td>
       <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname${hw?' w':aw?' l':''}">${teamName(g.h)}</span></div></td>
       <td style="text-align:center">${scoreHtml(g)}</td>
+      <td class="odds-cell">${historyOddsHtml(g, profiles)}</td>
       <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname${aw?' w':hw?' l':''}">${teamName(g.a)}</span></div></td>
       <td style="text-align:center">${tagHtml(g)}</td>`;
     tbody.appendChild(tr);

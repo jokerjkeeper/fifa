@@ -1,33 +1,40 @@
 # Session 進度記錄
-## 狀態: 已完成
-## 最後更新: 2026-06-25 22:39
+## 狀態: 進行中（等待用戶填入歷史賠率）
+## 最後更新: 2026-06-27 09:56
 ## 當前分支: main
 
 ### 當前任務
-- 修正「今日賽事」比分刷新與顯示問題。已完成並 push 到 main(commit d28f03d)。
+- 貝葉斯演算法的「資料底座 + 驗證」工程。本次完成：(1) 方法論文檔，(2) 歷史頁顯示賠率→貝葉斯，(3) 開立 6 張工單，(4) 搭好「真實賠率」匯入底座並產出待填清單。
+- **阻塞點**：等用戶在公司電腦填好 `docs/fifa2026_odds_to_fill.csv`（42 場 final 的真實歐賠）後回傳，我再寫匯入腳本合併進 ALL_GAMES。
 
 ### 已完成
-- [x] 診斷波黑(BIH) vs 卡塔爾(QAT)比分刷不出的原因 — 實測 scores API 回傳隊名為 `Bosnia & Herzegovina`(用 `&`),但 `ODDS_NAME_MAP` 只有 `Bosnia and Herzegovina`(用 `and`),名稱對不上 → fetchScores 跳過該場
-- [x] 修正:ODDS_NAME_MAP 補上 `'Bosnia & Herzegovina':'BIH'` 與連字號版 `'Bosnia-Herzegovina':'BIH'`(防呆)。實測該場真實比分為 BIH 3:1 QAT(completed)
-- [x] 重構 `oddsCellHtml` → 抽出 `oddsInnerHtml(g, profiles)`(不含 `<td>` 外框)共用;新增 `scoreOddsCellHtml`(上比分、下完整賠率+貝葉斯)
-- [x] `renderToday`:已開賽(final/live)場次改用 `scoreOddsCellHtml`,保留賠率/貝葉斯供對照(原本只顯示比分)
-- [x] commit + push main(用戶本次明確授權),commit d28f03d
+- [x] 通讀現有貝葉斯實作：`oddsToProb()`(去抽水→先驗) + `bayesUpdate()`/`perfFactor`(啟發式打分→後驗)。結論：非真貝葉斯，係數人工拍定、無法校準
+- [x] 對照用戶 `J:\git\obsi\dropbox\項目\數學\隨機\隨機.md`，評估替代方法：Poisson/Dixon-Coles(首選)、Elo/Glicko、Bradley-Terry、ML、Brier 回測
+- [x] 新增文檔 `docs/fifa2026_prediction_methods.md`（現況+問題+替代方法+演進路線）
+- [x] 歷史頁新增「賽前先驗→貝葉斯」欄：`historyOddsHtml()`，顯示先驗/後驗條+實際結果標示+✓/✗ 命中標記；表頭/colspan(7→8)/i18n 都已補
+- [x] `getOddsForGame()` 新增讀取 `g.odds:{home,draw,away}` 欄位（final 場次賽前賠率的權威來源）
+- [x] `historyOddsHtml()` 先驗優先序：`g.odds` → 舊 `ph/pd/pa` → 無
+- [x] 產出待填清單 `docs/fifa2026_odds_to_fill.csv`（42 場，odds 三欄留空）
+- [x] 開立工單 #169~#174（tag fifa2026），#169 進度更新至 40%
 
 ### 待辦
-- [ ] (安全)Odds API Key `023ee379…` 公開暴露於 repo 與線上網站 → 改後端 proxy 或先換新 key
-- [ ] (功能)32 強淘汰賽分頁、小組積分表
-- [ ] (技術)Odds API 加 localStorage cache(免費額度 500 次/月)
-- [ ] (一致性)讓歷史頁也顯示貝葉斯、啟用未使用的 `expected_wins`、補齊爆冷場次的 `ph` 欄位
-- [ ] (健壯性)考慮對 Odds API 隊名做正規化(去除 `&`/`and`/重音差異)以避免類似名稱對映漏接
+- [ ] **用戶填 `docs/fifa2026_odds_to_fill.csv`**（來源建議：OddsPortal / Betexplorer 的收盤或平均 1X2 賠率）
+- [ ] 收到後寫匯入腳本：依 `t` 時間戳把 odds 合併進 index.html 的 ALL_GAMES（工單 #169）
+- [ ] #171 Brier/log-loss 回測（裸賠率 vs 貝葉斯）— 資料到齊後做
+- [ ] #173 修 leakage（buildTeamProfiles 只用賽前場次）— 回測前必修，否則數字虛高
+- [ ] #172 用 Poisson/Dixon-Coles 取代 perfFactor
+- [ ] （承上 session）Odds API Key 明文暴露、32 強淘汰賽分頁、localStorage cache、隊名正規化
+- [ ] 本次程式變更尚未 commit（用戶未要求）
 
 ### 決策記錄
 | 日期 | 決策 | 原因 | 替代方案 |
 |------|------|------|----------|
-| 2026-06-24 | app 移至根目錄 index.html(單一來源) | 避免 docs 與根目錄各存一份 HTML 需各自維護 | 保留 docs 版 + Pages 從 /docs 發佈 |
-| 2026-06-24 | GitHub Pages 從 main /(root) 發佈 | 單檔零依賴靜態站,最省事 | gh-pages 分支(本機無 gh CLI) |
-| 2026-06-25 | 名稱以「補別名」而非「正規化」方式修 | 改動最小、風險最低,立即解決當前漏接 | 做隊名正規化函式(列入待辦) |
-| 2026-06-25 | 已開賽場次保留賠率+貝葉斯(不再只顯示比分) | 用戶要留著賽前盤口與貝葉斯供賽後對照 | 維持原本只顯示比分 |
+| 2026-06-27 | 資料底座走「用戶提供真實歷史賠率」 | 最嚴謹、驗證結果可信 | 手動估計先驗(打折)、只記錄未來場次 |
+| 2026-06-27 | 存「原始十進位賠率 odds 欄位」而非預算先驗 | 渲染時用 oddsToProb 即時換算，較乾淨、單一真相 | 直接存 ph/pd/pa（舊 8 場做法，保留為 fallback） |
+| 2026-06-27 | 歷史頁先驗優先序 odds→ph/pd/pa→無 | 相容舊 8 場估計值，又能吃新真實賠率 | 只認 odds（會讓舊 8 場失效） |
 
 ### 已知問題
-- Odds API Key 明文暴露於前端與公開 repo — 未處理,等待用戶決定方案
-- 隊名對映採白名單比對,API 改用其他寫法(如 `&`/`and`/重音/縮寫)時會漏接 — 本次已補 BIH,其餘待正規化處理
+- 42 場 final 目前 35 場無賠率→歷史頁顯示「賠率未記錄」；待 CSV 填回後消除（工單 #169）
+- 「自動記錄未來場次 live 賠率快照」靜態網站做不到（無後端持久化）；若要做需改非靜態方案 — 已向用戶說明，暫不影響當前路徑
+- buildTeamProfiles 用全賽季建檔有 leakage，回測前須修（#173）
+- （承上）Odds API Key 明文暴露；隊名白名單比對易漏接
