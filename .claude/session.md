@@ -1,6 +1,6 @@
 # Session 進度記錄
-## 狀態: 進行中（回測完成，證實需換引擎 #172）
-## 最後更新: 2026-06-27 17:40
+## 狀態: 進行中（#172 完成，誠實負結果 → 路線收斂到「信賠率」）
+## 最後更新: 2026-06-27 20:10
 ## 當前分支: main
 
 ### 當前任務
@@ -28,7 +28,8 @@
 ### 待辦
 - [x] #173 修 leakage：buildTeamProfiles(cutoffTs) 只納入開賽前 final；各 html helper 以 kickoffTs(g) 為 cutoff 自建 profiles（不再共用全域）。node 驗證：建檔場數隨時序遞增(0→37)，upcoming 納入全部 38
 - [x] #171 Brier/log-loss 回測完成。結果：裸賠率 Brier 0.560 / log 0.919 / 命中 63.2%；貝葉斯 0.578 / 0.929 / 57.9% → **三項全變差**。perfFactor 啟發式無校準價值。做成歷史頁頂常駐卡片 computeBacktest()/renderBacktest()
-- [ ] #172 用 Poisson/Dixon-Coles 取代 perfFactor — **回測必須勝過 0.560/0.919 基準線**才有價值，否則直接信賠率
+- [x] #172 Elo→λ→Poisson 模型完成。實作 buildEloRatings/eloToLambda/poissonMatrix/modelProbForGame（walk-forward 無洩漏）；回測卡片擴成三方對比（裸賠率/貝葉斯/Poisson 模型）+ i18n(btCol3/btModelBetter/btModelWorse)。**結果（靜態 38 場）：模型 0.586/0.976/52.6%，即使全樣本選參仍三項全敗，輸給裸賠率 0.560**。根因：每隊僅 3 場 + Elo 1500 冷啟動，盤口已含全球資訊。雙軌交叉驗證一致、瀏覽器目視通過。文檔補第六章
+- [ ] **（依 #172 結論的收尾）** UI 後驗欄改直接採用裸賠率，bayesUpdate/perfFactor/Elo-Poisson 標記 deprecated（保留三方回測卡片當科學記錄）— 尚未做
 - [ ] 6/24–6/25 的 scheduled 場次目前仍用 FALLBACK_ODDS（10 場），未來開賽後可補真實賠率
 - [ ] ph/pd/pa 在有 odds 後僅供「爆冷歸因」(line 528-530) 使用；未來換掉啟發式引擎時一併清理
 - [ ] （承上 session）Odds API Key 明文暴露、32 強淘汰賽分頁、localStorage cache、隊名正規化
@@ -42,6 +43,8 @@
 | 2026-06-27 | 歷史頁先驗優先序 odds→ph/pd/pa→無 | 相容舊 8 場估計值，又能吃新真實賠率 | 只認 odds（會讓舊 8 場失效） |
 | 2026-06-27 | 以 OddsPortal 為權威資料源，刪 4 場賽程不符＋改 2 場比分 | 既然要當參考數據來源，須與可查證的真實賽果一致，回測才可信 | 保留自有賽程（賠率對不上，回測虛假） |
 | 2026-06-27 | 賠率直接 bake 進 ALL_GAMES（內聯 odds 欄位）而非 runtime 匯入腳本 | 靜態網站無持久層，內聯最乾淨、單一真相 | 額外 JS 在載入時 merge（多餘、易出錯） |
+| 2026-06-27 | #172 走 Elo→λ→Poisson（非 Dixon-Coles MLE / 非賠率錨定） | 稀疏資料下最穩健；獨立於賠率才能公平驗證有無增量價值 | DC MLE（資料太少估不準）、賠率錨定 λ（等於複製盤口） |
+| 2026-06-27 | 模型敗北後採「誠實負結果」收尾，不硬塞贏 | 與 #171 科學精神一致；38 場稀疏資料盤口本就難贏 | 調參硬湊、改用賠率錨定假裝有效 |
 
 ### 已知問題
 - ~~42 場 final 多數無賠率~~ 已解決：38 場 final 全有真實賠率（OddsPortal）

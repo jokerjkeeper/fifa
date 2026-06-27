@@ -348,16 +348,16 @@ const I18N = {
   scoreFetching:{ zh:'⏳ 拉取即時比分…', en:'⏳ Fetching scores…' },
   scoreOk:    { zh:n=>`✓ 即時比分已更新 (${n} 場)`, en:n=>`✓ Scores updated (${n})` },
   scoreErr:   { zh:'⚠ 比分離線（使用既有數據）', en:'⚠ Scores offline (using cached)' },
-  btTitle:    { zh:'📐 回測驗證：賽前先驗 vs 貝葉斯後驗', en:'📐 Backtest: prior vs Bayesian posterior' },
+  btTitle:    { zh:'📐 回測驗證：裸賠率 vs 貝葉斯 vs Elo-Poisson 模型', en:'📐 Backtest: naked odds vs Bayesian vs Elo-Poisson' },
   btN:        { zh:n=>`樣本 ${n} 場 · walk-forward 無資料洩漏`, en:n=>`${n} matches · walk-forward, leakage-free` },
-  btCol1:     { zh:'裸賠率先驗', en:'Naked odds' },
-  btCol2:     { zh:'貝葉斯後驗', en:'Bayesian' },
+  btCol1:     { zh:'裸賠率', en:'Naked odds' },
+  btCol2:     { zh:'貝葉斯', en:'Bayesian' },
+  btCol3:     { zh:'Poisson 模型', en:'Poisson model' },
   btBrier:    { zh:'Brier（↓越低越好）', en:'Brier (↓ lower better)' },
   btLog:      { zh:'log-loss（↓）', en:'log-loss (↓)' },
   btHit:      { zh:'命中率（↑越高越好）', en:'Hit-rate (↑ higher better)' },
-  btWorse:    { zh:'結論：貝葉斯修正反而讓三項指標全部變差 → 現行 perfFactor 啟發式無校準價值，裸賠率本身就是更好的預測器。建議改用 Poisson / Dixon-Coles（#172）。', en:'Verdict: the Bayesian step worsens all three metrics — the perfFactor heuristic adds no calibrated value; raw odds predict better. Replace with Poisson / Dixon-Coles (#172).' },
-  btMixed:    { zh:'結論：兩者互有勝負，貝葉斯修正效果不穩定，仍建議改用 Poisson / Dixon-Coles（#172）驗證。', en:'Verdict: mixed results — the Bayesian step is inconsistent; worth testing Poisson / Dixon-Coles (#172).' },
-  btBetter:   { zh:'結論：貝葉斯修正改善了整體指標。', en:'Verdict: the Bayesian step improves the metrics overall.' },
+  btModelBetter: { zh:'結論：Elo-Poisson 模型在 Brier 與 log-loss 上勝過裸賠率，具獨立預測價值，可作為後驗引擎取代 perfFactor。', en:'Verdict: the Elo-Poisson model beats raw odds on Brier and log-loss — it adds independent predictive value and can replace perfFactor.' },
+  btModelWorse:  { zh:'結論：Elo-Poisson 模型（#172）仍未勝過裸賠率基準線（0.560 / 0.919）。原因：小組賽每隊僅約 3 場、Elo 從 1500 冷啟動，盤口已內含賽前全球資訊。誠實結論——直接信賠率，移除貝葉斯/啟發式後驗層。', en:'Verdict: the Elo-Poisson model (#172) still loses to the raw-odds baseline (0.560 / 0.919). Cause: ~3 group games per team and Elo cold-starting at 1500, while bookmaker odds already encode global pre-match info. Honest conclusion — trust the odds; drop the Bayesian/heuristic posterior layer.' },
 };
 // 取翻譯：t('key') 或 t('key', arg)（值為函式時）
 function t(key, arg) {
@@ -548,6 +548,60 @@ function buildTeamProfiles(cutoffTs = Infinity) {
     }
   });
   return profiles;
+}
+
+// ── #172 Elo→λ→Poisson 模型（取代 perfFactor 啟發式的候選引擎）──────────
+// 參數為對 38 場 final 全樣本網格搜尋的最佳值（best-effort），詳見
+// docs/fifa2026_prediction_methods.md 第六章。注意：全樣本選參有輕度過擬合。
+const ELO_K = 40;      // 學習率（含進球差加成）
+const ELO_HFA = 20;    // 中立場主場優勢
+const ELO_SCALE = 40;  // 評分差→進球差 尺度
+const ELO_MU = 2.3;    // 錨定的場均總進球
+
+// walk-forward Elo：僅吃 kickoffTs < cutoffTs 的 final（同 buildTeamProfiles 的無洩漏紀律）
+function buildEloRatings(cutoffTs = Infinity) {
+  const R = {};
+  const get = team => (R[team] ?? 1500);
+  ALL_GAMES.filter(g => g.s === 'final' && kickoffTs(g) < cutoffTs)
+    .sort((a, b) => kickoffTs(a) - kickoffTs(b))
+    .forEach(g => {
+      const rh = get(g.h), ra = get(g.a);
+      const eh = 1 / (1 + Math.pow(10, (ra - rh - ELO_HFA) / 400)); // 期望主隊勝率
+      const s = g.hs > g.as ? 1 : g.hs < g.as ? 0 : 0.5;
+      const gd = Math.abs(g.hs - g.as);                              // 進球差加成 (MOV)
+      const mult = gd <= 1 ? 1 : gd === 2 ? 1.5 : (11 + gd) / 8;
+      R[g.h] = rh + ELO_K * mult * (s - eh);
+      R[g.a] = ra + ELO_K * mult * ((1 - s) - (1 - eh));
+    });
+  return R;
+}
+
+// Elo 評分差 → 雙方進球率 λ（對數線性，總進球錨在 ELO_MU）
+function eloToLambda(ratingH, ratingA) {
+  const expDiff = (ratingH + ELO_HFA - ratingA) / ELO_SCALE;
+  return { lH: ELO_MU / 2 * Math.exp(+expDiff / 2),
+           lA: ELO_MU / 2 * Math.exp(-expDiff / 2) };
+}
+
+// λ → 1X2 機率：雙 Poisson 比分網格加總
+function poissonMatrix(lH, lA, maxGoals = 10) {
+  const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
+  const pois = (k, lam) => Math.exp(-lam) * Math.pow(lam, k) / fact(k);
+  let pH = 0, pD = 0, pA = 0;
+  for (let i = 0; i <= maxGoals; i++)
+    for (let j = 0; j <= maxGoals; j++) {
+      const p = pois(i, lH) * pois(j, lA);
+      if (i > j) pH += p; else if (i === j) pD += p; else pA += p;
+    }
+  const s = pH + pD + pA;
+  return { pH: pH / s, pD: pD / s, pA: pA / s };
+}
+
+// 便捷：對一場 final 算模型 1X2（以該場 kickoff 為 cutoff，無洩漏）
+function modelProbForGame(g) {
+  const elo = buildEloRatings(kickoffTs(g));
+  const { lH, lA } = eloToLambda(elo[g.h] ?? 1500, elo[g.a] ?? 1500);
+  return poissonMatrix(lH, lA);
 }
 
 // Convert decimal odds → fair probability (remove vig)
@@ -941,7 +995,7 @@ function addDateDiv(tbody, label, colspan=7) {
 function computeBacktest() {
   const norm = (a, b, c) => { const s = a + b + c; return [a/s, b/s, c/s]; };
   const EPS = 1e-12;
-  const A = { prior:{brier:0,log:0,hit:0}, bayes:{brier:0,log:0,hit:0} };
+  const A = { prior:{brier:0,log:0,hit:0}, bayes:{brier:0,log:0,hit:0}, model:{brier:0,log:0,hit:0} };
   let n = 0;
   ALL_GAMES.filter(g => g.s === 'final').forEach(g => {
     const odds = getOddsForGame(g);
@@ -949,7 +1003,8 @@ function computeBacktest() {
     const profiles = buildTeamProfiles(kickoffTs(g));
     const pr = oddsToProb(odds.home, odds.draw, odds.away);
     const by = bayesUpdate(pr.ph, pr.pd, pr.pa, g.h, g.a, profiles);
-    const P = norm(pr.ph, pr.pd, pr.pa), B = norm(by.bh, by.bd, by.ba);
+    const mm = modelProbForGame(g);                       // #172 Elo→Poisson
+    const P = norm(pr.ph, pr.pd, pr.pa), B = norm(by.bh, by.bd, by.ba), M = norm(mm.pH, mm.pD, mm.pA);
     const out = g.hs > g.as ? 0 : g.hs < g.as ? 2 : 1;   // 0=home 1=draw 2=away
     const oh = [out===0?1:0, out===1?1:0, out===2?1:0];
     const brier = p => p.reduce((s, pi, i) => s + (pi - oh[i])**2, 0);
@@ -957,11 +1012,12 @@ function computeBacktest() {
     const hit   = p => p.indexOf(Math.max(...p)) === out ? 1 : 0;
     A.prior.brier += brier(P); A.prior.log += logl(P); A.prior.hit += hit(P);
     A.bayes.brier += brier(B); A.bayes.log += logl(B); A.bayes.hit += hit(B);
+    A.model.brier += brier(M); A.model.log += logl(M); A.model.hit += hit(M);
     n++;
   });
   if (!n) return null;
   const avg = o => ({ brier:o.brier/n, log:o.log/n, hit:o.hit/n });
-  return { n, prior: avg(A.prior), bayes: avg(A.bayes) };
+  return { n, prior: avg(A.prior), bayes: avg(A.bayes), model: avg(A.model) };
 }
 
 function renderBacktest() {
@@ -971,28 +1027,28 @@ function renderBacktest() {
   if (!r) { box.innerHTML = ''; return; }
   const f3 = x => x.toFixed(3);
   const fp = x => (x*100).toFixed(1) + '%';
-  // [標籤, 先驗值, 後驗值, lowerBetter, 格式化]
+  // [標籤, 裸賠率值, 貝葉斯值, 模型值, lowerBetter, 格式化]
   const rows = [
-    [t('btBrier'), r.prior.brier, r.bayes.brier, true,  f3],
-    [t('btLog'),   r.prior.log,   r.bayes.log,   true,  f3],
-    [t('btHit'),   r.prior.hit,   r.bayes.hit,   false, fp],
+    [t('btBrier'), r.prior.brier, r.bayes.brier, r.model.brier, true,  f3],
+    [t('btLog'),   r.prior.log,   r.bayes.log,   r.model.log,   true,  f3],
+    [t('btHit'),   r.prior.hit,   r.bayes.hit,   r.model.hit,   false, fp],
   ];
-  let bayesWins = 0;
-  const trs = rows.map(([lab, pv, bv, low, fmt]) => {
-    const tie = pv === bv;
-    const priorBetter = low ? pv < bv : pv > bv;
-    if (!priorBetter && !tie) bayesWins++;
-    const pc = priorBetter && !tie ? 'bt-win' : '';
-    const bc = !priorBetter && !tie ? 'bt-win' : '';
-    const ck = c => c ? ' ✓' : '';
+  const ck = c => c ? ' ✓' : '';
+  const trs = rows.map(([lab, pv, bv, mv, low, fmt]) => {
+    // 三方取最佳（低越好或高越好）；highlight 勝者
+    const best = low ? Math.min(pv, bv, mv) : Math.max(pv, bv, mv);
+    const cls = v => v === best ? 'bt-win' : '';
     return `<tr>
       <td style="text-align:left;color:var(--text2)">${lab}</td>
-      <td class="${pc}">${fmt(pv)}${ck(pc)}</td>
-      <td class="${bc}">${fmt(bv)}${ck(bc)}</td>
+      <td class="${cls(pv)}">${fmt(pv)}${ck(cls(pv))}</td>
+      <td class="${cls(bv)}">${fmt(bv)}${ck(cls(bv))}</td>
+      <td class="${cls(mv)}">${fmt(mv)}${ck(cls(mv))}</td>
     </tr>`;
   }).join('');
-  const verdict = bayesWins === 0 ? t('btWorse') : bayesWins === 3 ? t('btBetter') : t('btMixed');
-  const vcol = bayesWins === 0 ? 'var(--red)' : bayesWins === 3 ? 'var(--green)' : 'var(--text2)';
+  // verdict 以「模型 vs 裸賠率」為主軸：模型須 Brier 與 log 同時低於賠率才算勝
+  const modelBeatsOdds = r.model.brier < r.prior.brier && r.model.log < r.prior.log;
+  const verdict = modelBeatsOdds ? t('btModelBetter') : t('btModelWorse');
+  const vcol = modelBeatsOdds ? 'var(--green)' : 'var(--red)';
   box.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:8px">
       <strong style="font-size:14px">${t('btTitle')}</strong>
@@ -1000,7 +1056,7 @@ function renderBacktest() {
     </div>
     <table class="bt-table">
       <thead><tr style="color:var(--text3);font-size:11px">
-        <th></th><th>${t('btCol1')}</th><th>${t('btCol2')}</th>
+        <th></th><th>${t('btCol1')}</th><th>${t('btCol2')}</th><th>${t('btCol3')}</th>
       </tr></thead>
       <tbody>${trs}</tbody>
     </table>
