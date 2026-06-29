@@ -30,7 +30,16 @@
 - [x] #171 Brier/log-loss 回測完成。結果：裸賠率 Brier 0.560 / log 0.919 / 命中 63.2%；貝葉斯 0.578 / 0.929 / 57.9% → **三項全變差**。perfFactor 啟發式無校準價值。做成歷史頁頂常駐卡片 computeBacktest()/renderBacktest()
 - [x] #172 Elo→λ→Poisson 模型完成。實作 buildEloRatings/eloToLambda/poissonMatrix/modelProbForGame（walk-forward 無洩漏）；回測卡片擴成三方對比（裸賠率/貝葉斯/Poisson 模型）+ i18n(btCol3/btModelBetter/btModelWorse)。**結果（靜態 38 場）：模型 0.586/0.976/52.6%，即使全樣本選參仍三項全敗，輸給裸賠率 0.560**。根因：每隊僅 3 場 + Elo 1500 冷啟動，盤口已含全球資訊。雙軌交叉驗證一致、瀏覽器目視通過。文檔補第六章
 - [x] **（依 #172 結論的收尾）** UI 後驗欄改直接採用裸賠率：oddsInnerHtml/historyOddsHtml 移除 🧮 貝葉斯條，只留 📊 賠率 + 命中標記；表頭/info-box/footer 文案改寫；bayesUpdate/Elo 區塊加 DEPRECATED 註解（函式保留供回測卡片）。三方回測卡片保留為科學記錄。瀏覽器目視通過
-- [ ] 6/24–6/25 的 scheduled 場次目前仍用 FALLBACK_ODDS（10 場），未來開賽後可補真實賠率
+- [x] 6/24–6/25 的 10 場 scheduled 已補真實比分＋賠率（OddsPortal 0622-0625.png），改為 final → 全 48 場 final、全帶 odds。根因：upcoming 用 g.s 狀態篩、不看日期，而 fetchScores daysFrom 最多 3 天抓不到舊場，故卡 scheduled
+- [x] 修 upcoming 篩選為「狀態+開賽時間」雙重判斷：live/inprogress 一律顯示；scheduled 僅 kickoffTs>now 才算 upcoming（renderAll line ~1089），未來不再卡舊場
+- [x] 空狀態文案情境化：upcoming/today 全賽程結束時顯示「小組賽已結束，淘汰賽待公布」（emptyUpcomingDone/emptyTodayDone）
+- [x] OddsPortal 0626-0629 截圖：發現 6/26–6/28 是「同組對戰」=缺漏的小組賽末輪（非淘汰賽！只有 6/29 RSA-CAN 跨組才是淘汰賽）。補 16 場小組賽（F~L 七組補完整、D 補到4）→ 64 場小組賽
+- [x] 新增「淘汰賽」分頁：game 加 stage:'ko'+ko 輪次欄；stageTag() 淘汰賽顯輪次/小組賽顯組別；KO_ROUNDS(R32/R16/QF/SF/F)；renderKnockout()；history 改排除 ko 避免重複；回測 computeBacktest 自動納入 ko（用戶要求）。目前淘汰賽 1 場 RSA-CAN 0:1 [R32]。node 驗證 65 場/語法 OK
+
+### 待補（資料缺口，需用戶提供截圖）
+- [ ] 小組賽仍缺 8 場：C 缺2、D 缺2、E 缺4（截圖被裁掉/更早日期）
+- [ ] 所有 6/26 之後場次的**開賽時刻為占位**（日期正確），待真實時間校正
+- [ ] 淘汰賽後續場次（16強/8強…）出齊後續補；輪次目前 RSA-CAN 暫定 R32（OddsPortal 標 "Play Offs"）
 - [ ] ph/pd/pa 在有 odds 後僅供「爆冷歸因」(line 528-530) 使用；未來換掉啟發式引擎時一併清理
 - [x] 隊名正規化：normTeamKey()+ODDS_NAME_MAP_NORM+resolveTeamAbbr()，API 拼法變體（Türkiye/Cabo Verde/印刷體撇號/變音符）不再被靜默丟棄，未對應改 console.warn。fetchOdds/fetchScores 7 處查找全改用。commit 1906339
 - [x] localStorage cache：cachedFetchJson(name,url,ttl,force)，賠率 TTL 30 分/比分 5 分；命中新鮮快取不打 API、網路失敗退回過期快取（離線可用）、狀態列標「· 快取/離線快取」；手動「更新」鈕 force 略過快取。瀏覽器三情境驗證通過
