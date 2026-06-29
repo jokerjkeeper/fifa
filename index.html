@@ -198,6 +198,7 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
 <div class="tabs-bar">
   <button class="tab active" id="tab-upcoming" onclick="switchTab('upcoming')"><span data-i18n="tab-upcoming">即將開賽</span> <span class="cnt" id="cnt-upcoming">—</span></button>
   <button class="tab" id="tab-today" onclick="switchTab('today')"><span data-i18n="tab-today">今日賽事</span> <span class="cnt" id="cnt-today">—</span></button>
+  <button class="tab" id="tab-ko" onclick="switchTab('ko')"><span data-i18n="tab-ko">淘汰賽</span> <span class="cnt" id="cnt-ko">—</span></button>
   <button class="tab" id="tab-history" onclick="switchTab('history')"><span data-i18n="tab-history">歷史紀錄</span> <span class="cnt" id="cnt-history">—</span></button>
 </div>
 
@@ -239,6 +240,21 @@ td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;ve
   <div class="table-wrap"><table>
     <thead><tr><th data-i18n="th-time">時間(台)</th><th data-i18n="th-group">組別</th><th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-score-odds">比分 / 賠率隱含概率</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-status">狀態</th></tr></thead>
     <tbody id="tbody-today"></tbody>
+  </table></div>
+</div>
+
+<!-- KNOCKOUT -->
+<div class="panel" id="panel-ko">
+  <div class="info-box">
+    <strong data-i18n="koTitle">淘汰賽</strong>
+    <span data-i18n="koDesc">　跨組單場淘汰；賽前賠率隱含機率與實際結果對照（同歷史頁邏輯）。</span>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th data-i18n="th-date">日期</th><th data-i18n="th-time">時間(台)</th><th data-i18n="th-stage">階段</th>
+      <th data-i18n="th-home">主隊</th><th class="c" data-i18n="th-score">比分</th><th class="c" data-i18n="th-pred">賽前賠率預測 vs 結果</th><th data-i18n="th-away">客隊</th><th class="c" data-i18n="th-tag">標記</th>
+    </tr></thead>
+    <tbody id="tbody-ko"></tbody>
   </table></div>
 </div>
 
@@ -321,6 +337,7 @@ const I18N = {
   'st-sched': { zh:'即將開賽', en:'Upcoming' },
   'tab-upcoming': { zh:'即將開賽', en:'Upcoming' },
   'tab-today':    { zh:'今日賽事', en:'Today' },
+  'tab-ko':       { zh:'淘汰賽', en:'Knockout' },
   'tab-history':  { zh:'歷史紀錄', en:'History' },
   'info-box': {
     zh:'<strong>預測說明</strong>：<strong style="color:var(--accent)">藍色</strong> = 外盤賠率去抽水後的隱含概率。經回測驗證（見歷史頁回測卡片），市場盤口本身就是最佳預測器，自製的貝葉斯/Elo-Poisson 修正反而降低準度，故直接採用賠率機率。',
@@ -335,6 +352,7 @@ const I18N = {
   'th-date':  { zh:'日期', en:'Date' },
   'th-time':  { zh:'時間(台)', en:'Time (TW)' },
   'th-group': { zh:'組別', en:'Group' },
+  'th-stage': { zh:'階段', en:'Stage' },
   'th-home':  { zh:'主隊', en:'Home' },
   'th-away':  { zh:'客隊', en:'Away' },
   'th-status':{ zh:'狀態', en:'Status' },
@@ -362,7 +380,12 @@ const I18N = {
   predHit:    { zh:'命中', en:'hit' },
   predMiss:   { zh:'未中', en:'miss' },
   emptyUpcoming:{ zh:'暫無符合條件的賽事', en:'No matches for this filter' },
+  emptyUpcomingDone:{ zh:'小組賽已全部結束，淘汰賽賽程待公布後更新', en:'Group stage complete — knockout fixtures will appear once announced' },
   emptyToday: { zh:'今日暫無賽事', en:'No matches today' },
+  emptyTodayDone:{ zh:'今日無賽事；小組賽已全部結束，淘汰賽賽程待公布', en:'No matches today — group stage complete, awaiting knockout fixtures' },
+  emptyKo:    { zh:'淘汰賽尚未開始或資料待補', en:'Knockout stage not started yet, or data pending' },
+  koTitle:    { zh:'淘汰賽', en:'Knockout' },
+  koDesc:     { zh:'　跨組單場淘汰；賽前賠率隱含機率與實際結果對照（同歷史頁邏輯）。', en:'　Single-leg cross-group knockout; pre-match odds-implied probability vs result (same logic as History).' },
   emptyHistory:{ zh:'暫無符合條件的比賽', en:'No matches for this filter' },
   updatedAt:  { zh:'更新於 ', en:'Updated ' },
   lastUpdate: { zh:'最後更新：', en:'Last updated: ' },
@@ -410,6 +433,22 @@ function teamName(abbr) { return (lang==='en' ? EN[abbr] : ZH[abbr]) || abbr; }
 function groupTag(abbr) {
   const g = GROUPMAP[abbr];
   return (lang==='zh' ? `小組賽 ${g}組` : `Group ${g}`);
+}
+// 淘汰賽輪次標籤
+const KO_ROUNDS = {
+  R32: { zh:'32強', en:'Round of 32' },
+  R16: { zh:'16強', en:'Round of 16' },
+  QF:  { zh:'8強',  en:'Quarter-final' },
+  SF:  { zh:'4強',  en:'Semi-final' },
+  F:   { zh:'決賽', en:'Final' },
+};
+// 階段標籤：淘汰賽場次顯示輪次，其餘顯示小組
+function stageTag(g) {
+  if (g.stage === 'ko') {
+    const r = KO_ROUNDS[g.ko];
+    return r ? r[lang] : (lang==='zh' ? '淘汰賽' : 'Knockout');
+  }
+  return groupTag(g.h);
 }
 
 // 套用所有靜態文字 + 切換鈕標籤
@@ -549,17 +588,36 @@ const ALL_GAMES = [
   {s:'final',t:'2026-06-23T05:00',h:'FRA',a:'IRQ',hs:3,as:0,odds:{home:1.10,draw:13.61,away:46.00}},
   {s:'final',t:'2026-06-23T08:00',h:'NOR',a:'SEN',hs:3,as:2,odds:{home:2.55,draw:3.50,away:3.24}},
   {s:'final',t:'2026-06-23T11:00',h:'JOR',a:'DZA',hs:1,as:2,odds:{home:8.10,draw:4.65,away:1.53}},
-  // Round 3 – UPCOMING (odds fetched live)
-  {s:'scheduled',t:'2026-06-24T01:00',h:'POR',a:'UZB',hs:0,as:0},
-  {s:'scheduled',t:'2026-06-24T04:00',h:'ENG',a:'GHA',hs:0,as:0},
-  {s:'scheduled',t:'2026-06-24T07:00',h:'PAN',a:'CRO',hs:0,as:0},
-  {s:'scheduled',t:'2026-06-24T10:00',h:'COL',a:'COD',hs:0,as:0},
-  {s:'scheduled',t:'2026-06-25T03:00',h:'SUI',a:'CAN',hs:0,as:0},
-  {s:'scheduled',t:'2026-06-25T03:00',h:'BIH',a:'QAT',hs:0,as:0},
-  {s:'scheduled',t:'2026-06-25T06:00',h:'SCO',a:'BRA',hs:0,as:0},
-  {s:'scheduled',t:'2026-06-25T06:00',h:'MAR',a:'HTI',hs:0,as:0},
-  {s:'scheduled',t:'2026-06-25T09:00',h:'CZE',a:'MEX',hs:0,as:0},
-  {s:'scheduled',t:'2026-06-25T09:00',h:'RSA',a:'KOR',hs:0,as:0},
+  // Round 3 – 已開賽（比分/賠率取自 OddsPortal 0622-0625.png）
+  {s:'final',t:'2026-06-24T01:00',h:'POR',a:'UZB',hs:5,as:0,odds:{home:1.18,draw:9.71,away:22.00}},
+  {s:'final',t:'2026-06-24T04:00',h:'ENG',a:'GHA',hs:0,as:0,odds:{home:1.23,draw:7.75,away:20.00}},
+  {s:'final',t:'2026-06-24T07:00',h:'PAN',a:'CRO',hs:0,as:1,odds:{home:8.54,draw:4.75,away:1.47}},
+  {s:'final',t:'2026-06-24T10:00',h:'COL',a:'COD',hs:1,as:0,odds:{home:1.60,draw:4.10,away:7.40}},
+  {s:'final',t:'2026-06-25T03:00',h:'SUI',a:'CAN',hs:2,as:1,odds:{home:2.65,draw:3.31,away:3.25}},
+  {s:'final',t:'2026-06-25T03:00',h:'BIH',a:'QAT',hs:3,as:1,odds:{home:1.45,draw:5.15,away:8.10}},
+  {s:'final',t:'2026-06-25T06:00',h:'SCO',a:'BRA',hs:0,as:3,odds:{home:11.00,draw:5.74,away:1.38}},
+  {s:'final',t:'2026-06-25T06:00',h:'MAR',a:'HTI',hs:4,as:2,odds:{home:1.34,draw:6.50,away:13.24}},
+  {s:'final',t:'2026-06-25T09:00',h:'CZE',a:'MEX',hs:0,as:3,odds:{home:5.10,draw:4.24,away:1.80}},
+  {s:'final',t:'2026-06-25T09:00',h:'RSA',a:'KOR',hs:1,as:0,odds:{home:6.00,draw:3.90,away:1.78}},
+  // 小組賽末輪補完（D/F~L）— 比分/賠率取自 OddsPortal（0626-0629 截圖）；時刻為占位，待真實開賽時間校正
+  {s:'final',t:'2026-06-26T00:00',h:'PAR',a:'AUS',hs:0,as:0,odds:{home:2.75,draw:2.45,away:4.45}},
+  {s:'final',t:'2026-06-26T03:00',h:'TUR',a:'USA',hs:3,as:2,odds:{home:3.60,draw:4.07,away:2.12}},
+  {s:'final',t:'2026-06-26T06:00',h:'JPN',a:'SWE',hs:1,as:1,odds:{home:2.47,draw:3.50,away:3.41}},
+  {s:'final',t:'2026-06-26T09:00',h:'TUN',a:'NED',hs:1,as:3,odds:{home:26.68,draw:12.00,away:1.18}},
+  {s:'final',t:'2026-06-27T00:00',h:'NZL',a:'BEL',hs:1,as:5,odds:{home:16.00,draw:9.00,away:1.22}},
+  {s:'final',t:'2026-06-27T03:00',h:'EGY',a:'IRN',hs:1,as:1,odds:{home:2.81,draw:2.78,away:3.55}},
+  {s:'final',t:'2026-06-27T06:00',h:'CPV',a:'KSA',hs:0,as:0,odds:{home:2.80,draw:3.57,away:3.04}},
+  {s:'final',t:'2026-06-27T09:00',h:'URU',a:'ESP',hs:0,as:1,odds:{home:6.50,draw:4.06,away:1.72}},
+  {s:'final',t:'2026-06-27T12:00',h:'NOR',a:'FRA',hs:1,as:4,odds:{home:8.60,draw:6.10,away:1.45}},
+  {s:'final',t:'2026-06-27T15:00',h:'SEN',a:'IRQ',hs:5,as:0,odds:{home:1.27,draw:7.60,away:14.50}},
+  {s:'final',t:'2026-06-28T00:00',h:'DZA',a:'AUT',hs:3,as:3,odds:{home:3.90,draw:2.15,away:3.76}},
+  {s:'final',t:'2026-06-28T03:00',h:'JOR',a:'ARG',hs:1,as:3,odds:{home:30.00,draw:10.20,away:1.18}},
+  {s:'final',t:'2026-06-28T06:00',h:'COL',a:'POR',hs:0,as:0,odds:{home:4.34,draw:4.13,away:1.95}},
+  {s:'final',t:'2026-06-28T09:00',h:'COD',a:'UZB',hs:3,as:1,odds:{home:1.75,draw:4.07,away:5.85}},
+  {s:'final',t:'2026-06-28T12:00',h:'CRO',a:'GHA',hs:2,as:1,odds:{home:1.90,draw:3.33,away:5.89}},
+  {s:'final',t:'2026-06-28T15:00',h:'PAN',a:'ENG',hs:0,as:2,odds:{home:24.00,draw:9.00,away:1.18}},
+  // 淘汰賽（跨組對戰）— stage:'ko'，ko 為輪次；時刻為占位，待真實開賽時間校正
+  {s:'final',stage:'ko',ko:'R32',t:'2026-06-29T03:00',h:'RSA',a:'CAN',hs:0,as:1,odds:{home:5.43,draw:3.60,away:1.92}},
 ];
 
 // ══════════════════════════════════════════════════════
@@ -852,7 +910,7 @@ function setChip(el, key, val) {
 let currentTab = 'upcoming';
 function switchTab(tab) {
   currentTab = tab;
-  ['upcoming','today','history'].forEach(t => {
+  ['upcoming','today','ko','history'].forEach(t => {
     document.getElementById('panel-'+t).classList.toggle('active', t===tab);
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
   });
@@ -1086,8 +1144,16 @@ function renderBacktest() {
 
 function renderAll() {
   const today = todayLabel();
-  const history  = ALL_GAMES.filter(g => g.s === 'final');
-  const upcoming = ALL_GAMES.filter(g => g.s === 'scheduled' || g.s === 'live' || g.s === 'inprogress');
+  const now = Date.now();
+  const knockout = ALL_GAMES.filter(g => g.stage === 'ko');
+  // 歷史只放小組賽 final（淘汰賽另開分頁，避免重複顯示）
+  const history  = ALL_GAMES.filter(g => g.s === 'final' && g.stage !== 'ko');
+  // 即將開賽：進行中的場次一律顯示；scheduled 只在「開賽時間尚未到」時算 upcoming，
+  // 避免已過開賽時間卻還沒被 fetchScores 補上比分的場次（如 API daysFrom 抓不到的舊場）一直卡在這。
+  const upcoming = ALL_GAMES.filter(g =>
+    g.s === 'live' || g.s === 'inprogress' ||
+    (g.s === 'scheduled' && kickoffTs(g) > now)
+  );
   const todayGames = ALL_GAMES.filter(g => fmtTW(g.t).date === today);
 
   document.getElementById('s-total').textContent  = ALL_GAMES.length;
@@ -1096,10 +1162,12 @@ function renderAll() {
   document.getElementById('s-sched').textContent  = upcoming.filter(g=>g.s==='scheduled').length;
   document.getElementById('cnt-upcoming').textContent = upcoming.length;
   document.getElementById('cnt-today').textContent    = todayGames.length;
+  document.getElementById('cnt-ko').textContent       = knockout.length;
   document.getElementById('cnt-history').textContent  = history.length;
 
   renderUpcoming(upcoming);
   renderToday(todayGames);
+  renderKnockout(knockout);
   renderHistory(history);
   renderBacktest();
 }
@@ -1109,7 +1177,11 @@ function renderUpcoming(games) {
   const gf = chipState['ug'];
   const filtered = gf==='all' ? games : games.filter(g => GROUPMAP[g.h]===gf);
   tbody.innerHTML = '';
-  if (!filtered.length) { tbody.innerHTML=`<tr class="empty"><td colspan="7">${t('emptyUpcoming')}</td></tr>`; return; }
+  if (!filtered.length) {
+    // 區分「整體沒有未來賽事（賽程已全部結束）」與「只是當前組別篩掉了」
+    const msg = games.length === 0 ? t('emptyUpcomingDone') : t('emptyUpcoming');
+    tbody.innerHTML=`<tr class="empty"><td colspan="7">${msg}</td></tr>`; return;
+  }
   let last = '';
   filtered.forEach(g => {
     const t = fmtTW(g.t);
@@ -1131,7 +1203,12 @@ function renderUpcoming(games) {
 function renderToday(games) {
   const tbody = document.getElementById('tbody-today');
   tbody.innerHTML = '';
-  if (!games.length) { tbody.innerHTML=`<tr class="empty"><td colspan="6">${t('emptyToday')}</td></tr>`; return; }
+  if (!games.length) {
+    // 若全賽程都已結束（無任何 scheduled/live），給更明確的提示
+    const allDone = ALL_GAMES.every(g => g.s === 'final');
+    const msg = allDone ? t('emptyTodayDone') : t('emptyToday');
+    tbody.innerHTML=`<tr class="empty"><td colspan="6">${msg}</td></tr>`; return;
+  }
   let last = '';
   games.forEach(g => {
     const t = fmtTW(g.t);
@@ -1151,7 +1228,7 @@ function renderToday(games) {
 
     tr.innerHTML = `
       <td style="color:var(--text2);font-size:12px">${t.time}</td>
-      <td><span class="grp-tag">${groupTag(g.h)}</span></td>
+      <td><span class="grp-tag">${stageTag(g)}</span></td>
       <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname${hw?' w':''}">${teamName(g.h)}</span></div></td>
       ${midCell}
       <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname${aw?' w':''}">${teamName(g.a)}</span></div></td>
@@ -1185,6 +1262,33 @@ function renderHistory(games) {
       <td class="odds-cell">${historyOddsHtml(g)}</td>
       <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname${aw?' w':hw?' l':''}">${teamName(g.a)}</span></div></td>
       <td style="text-align:center">${tagHtml(g)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// 淘汰賽分頁：結構同歷史頁，但「組別」欄改顯示輪次（stageTag），且不套小組賽篩選
+function renderKnockout(games) {
+  const tbody = document.getElementById('tbody-ko');
+  tbody.innerHTML = '';
+  if (!games.length) { tbody.innerHTML=`<tr class="empty"><td colspan="8">${t('emptyKo')}</td></tr>`; return; }
+  const ordered = [...games].reverse();
+  let last = '';
+  ordered.forEach(g => {
+    const t = fmtTW(g.t);
+    if (t.date !== last) { last=t.date; addDateDiv(tbody, t.date, 8); }
+    const isFinal = g.s === 'final';
+    const hw=isFinal&&g.hs>g.as, aw=isFinal&&g.as>g.hs;
+    const tr = document.createElement('tr');
+    if (g.s==='live'||g.s==='inprogress') tr.style.background='rgba(220,38,38,0.04)';
+    tr.innerHTML = `
+      <td style="color:var(--text2);font-size:12px">${t.date}</td>
+      <td style="color:var(--text2);font-size:12px">${t.time}</td>
+      <td><span class="grp-tag">${stageTag(g)}</span></td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.h]||'🏳'}</span><span class="tname${hw?' w':aw?' l':''}">${teamName(g.h)}</span></div></td>
+      <td style="text-align:center">${scoreHtml(g)}</td>
+      <td class="odds-cell">${isFinal ? historyOddsHtml(g) : oddsCellHtml(g)}</td>
+      <td><div class="team-cell"><span class="flag">${FLAG[g.a]||'🏳'}</span><span class="tname${aw?' w':hw?' l':''}">${teamName(g.a)}</span></div></td>
+      <td style="text-align:center">${isFinal ? tagHtml(g) : badgeHtml(g)}</td>`;
     tbody.appendChild(tr);
   });
 }
